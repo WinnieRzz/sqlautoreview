@@ -15,35 +15,42 @@ package com.taobao.sqlautoreview;
 
 import java.util.List;
 
-/*
- * interfaceÀà
- * HandleSQLReviewDBÀàÊÇIHandleDB½Ó¿ÚµÄÒ»¸öÊµÏÖ
+/**
+ * interfaceç±» HandleSQLReviewDBç±»æ˜¯IHandleDBæ¥å£çš„ä¸€ä¸ªå®ç°
  */
 
 public interface IHandleDB {
-	//check connection status
+	// check connection status
 	public boolean checkConnection();
-	//½«SQLĞ´Èëµ½SQL review databaseÖĞ
-	public boolean insertDB(int sqlmap_file_id, String java_class_id, String sql_xml, String real_sql, String sql_comment);
-	//»ñµÃ´ıÉóºËµÄSQL,´ÓÅäÖÃÎÄ¼şÖĞ¶ÁÈ¡sqlmap_fileid
-	public List<SQL_Node> getAllSQL();
-	//»ñµÃ´ıÉóºËµÄSQL
-	public List<SQL_Node> getAllSQL(int sqlmap_file_id);
-	//¸üĞÂÕâÌõSQLµÄÉóºË×´Ì¬
-	public int updateSQLStatus(int status,String sql_auto_index,int id,String auto_review_err,String auto_review_tip);
-	//¸üĞÂÕâÌõSQLµÄÉóºË×´Ì¬
-	public int updateSQLStatus(int status,String sql_auto_index,int id,String auto_review_err,String auto_review_tip,String tablenames);
-	//»ñµÃÉóºË³öµÄËùÓĞindex
-	//merge indexËùÓÃ
-	//ÕâÀïÖ»ĞèÒªIndex_NodeÖĞµÄtable_name,index_nameÁ½¸ö×Ö¶Î
-	public List<Index_Node> getAllIndexes();
-	//»ñµÃÉóºË³öµÄËùÓĞindex
-	//merge indexËùÓÃ
-	//ÕâÀïÖ»ĞèÒªIndex_NodeÖĞµÄtable_name,index_nameÁ½¸ö×Ö¶Î
-	public List<Index_Node> getAllIndexes(int sqlmap_file_id);
-	//É¾³ımerge½á¹û
-	public void deleteMergeResult(int sqlmap_file_id);
-	//²åÈëmerge½á¹û
-	public void saveMergeResult(int sqlmap_file_id,String tablename,String real_tablename,String exist_indexes,String new_indexes,String merge_result);
-}
 
+	// å°†SQLå†™å…¥åˆ°SQL review databaseä¸­
+	public boolean insertDB(int sqlmap_file_id, String java_class_id, String sql_xml, String real_sql, String sql_comment);
+
+	// è·å¾—å¾…å®¡æ ¸çš„SQL,ä»é…ç½®æ–‡ä»¶ä¸­è¯»å–sqlmap_fileid
+	public List<SQL_Node> getAllSQL();
+
+	// è·å¾—å¾…å®¡æ ¸çš„SQL
+	public List<SQL_Node> getAllSQL(int sqlmap_file_id);
+
+	// æ›´æ–°è¿™æ¡SQLçš„å®¡æ ¸çŠ¶æ€
+	public int updateSQLStatus(int status, String sql_auto_index, int id, String auto_review_err, String auto_review_tip);
+
+	// æ›´æ–°è¿™æ¡SQLçš„å®¡æ ¸çŠ¶æ€
+	public int updateSQLStatus(int status, String sql_auto_index, int id, String auto_review_err, String auto_review_tip,
+			String tablenames);
+
+	// è·å¾—å®¡æ ¸å‡ºçš„æ‰€æœ‰index
+	// merge indexæ‰€ç”¨
+	// è¿™é‡Œåªéœ€è¦Index_Nodeä¸­çš„table_name,index_nameä¸¤ä¸ªå­—æ®µ
+	public List<Index_Node> getAllIndexes();
+
+	// è·å¾—å®¡æ ¸å‡ºçš„æ‰€æœ‰index merge indexæ‰€ç”¨è¿™é‡Œåªéœ€è¦Index_Nodeä¸­çš„table_name,index_nameä¸¤ä¸ªå­—æ®µ
+	public List<Index_Node> getAllIndexes(int sqlmap_file_id);
+
+	// åˆ é™¤mergeç»“æœ
+	public void deleteMergeResult(int sqlmap_file_id);
+
+	// æ’å…¥mergeç»“æœ
+	public void saveMergeResult(int sqlmap_file_id, String tablename, String real_tablename, String exist_indexes, String new_indexes,
+			String merge_result);
+}

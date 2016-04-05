@@ -16,41 +16,49 @@ package com.taobao.sqlautoreview;
 import java.util.List;
 
 /*
- * ¶¨ÒåÒµÎñÊı¾İ¿â·ÃÎÊ½Ó¿Ú,Í¨¹ıÕâĞ©½Ó¿Ú,¿ÉÒÔ»ñµÃÏà¹ØÔªÊı¾İ
+ * å®šä¹‰ä¸šåŠ¡æ•°æ®åº“è®¿é—®æ¥å£,é€šè¿‡è¿™äº›æ¥å£,å¯ä»¥è·å¾—ç›¸å…³å…ƒæ•°æ®
  * author:danchen /zhaolin
  * create time:2012-1-13
  */
 public interface IMetaData {
-	//¼ì²éÁ¬½Ó×´Ì¬
+	// æ£€æŸ¥è¿æ¥çŠ¶æ€
 	public boolean checkConnection();
-	//¹¹Ôìµ¥¸ö±íµÄindexÔªÊı¾İ
+
+	// æ„é€ å•ä¸ªè¡¨çš„indexå…ƒæ•°æ®
 	public List<Index_Node> buildIndexMetaData(String tablename);
-	//¹¹Ôìµ¥¸ö±íµÄcolumnÔªÊı¾İ
-    public List<Column_Node> buildColumnMetaData(String tablename);
-    //¹¹ÔìÒ»¸ö±íËùĞèµÄÔªÊı¾İcolumn+index of one table
-    public void buildTableMetaData(String tablename);
-    //¹¹ÔìÕâ¸ö¿âËùÓĞ±íµÄÔªÊı¾İ
-    public void buildDBMetaData();
-    //¸ù¾İ±íÃû,ÁĞÃû,»ñµÃÖ¸¶¨ÁĞµÄÔªÊı¾İ
-    public Column_Node searchColumnMetaData(String tablename,String column_name);
-    //¸ù¾İ±íÃû,ÁĞÃû»ñµÃÖ¸¶¨ÁĞÉÏ´æÔÚµÄË÷ÒıµÄÔªÊı¾İ,Ò»¸öÁĞ¿ÉÄÜÒÑ´æÔÚÓÚ¶à¸öË÷Òıµ±ÖĞ,ËùÒÔ·µ»ØµÄÊÇÒ»¸öList
-    public List<Index_Node> searchIndexMetaData(String tablename,String column_name);
-    //¼ì²é±íÃûÔÚÔªÊı¾İCacheÖĞÊÇ·ñ´æÔÚ
-    public boolean checkTableExist(String tablename);
-    /*
-     * ¼ì²é±íÃûÔÚÒµÎñÊı¾İ¿âÖĞÊÇ·ñ´æÔÚ,ÓĞ¿ÉÄÜ·Ö¿â·Ö±í,¸ñÊ½tablename_XXXX
-     * Ê¹ÓÃÁËTDDL£¬ºÜÓĞ¿ÉÄÜ»áÅöÉÏÕâÑùµÄtablename
-     * ÕâĞ©tablename´æÔÚSQLMAPÖĞ£¬ĞèÒª×ª»¯ºó²ÅÄÜÊ¹ÓÃ
-     * Èç¹ûÊµ¼ÊµÄ±íÃû,ÓëSQLÖĞµÄ±íÃû²»Ò»ÖÂ,ĞèÒªÈÃÉÏ²ãÖªµÀ
-     */
-    public String findMatchTable(String tablename);
-    //¸ù¾İ±íÃû,»ñµÃ±íÉÏµÄË÷Òı,Õâ¸öÊÇÎªÇ°¶ËÕ¹Ê¾·şÎñµÄ,ºóÌ¨³ÌĞò²»»áÓÃµ½Õâ¸ö½Ó¿Ú
-    //Ö§³Ö¶à±í,²ÎÊıtablenames´«Èë¹æ·¶tablename,tablename
-    //ºóÌ¨µÄmerge indexÒ²»áµ÷ÓÃÕâ¸öº¯Êı
-    //·µ»Ø¸ñÊ½seller:PRIMARY(seller_id);idx_seller_nick(nick);|test1:PRIMARY(id);idx_up_uid(user_id,gmt_modified,is_delete);
-    public String getIndexesByTableName(String tablenames);
-    /*
-	 * ²»¹Ø±ÕÁ¬½Ó,»ñÈ¡Ò»¸ö±íµÄËùÓĞË÷Òı
+
+	// æ„é€ å•ä¸ªè¡¨çš„columnå…ƒæ•°æ®
+	public List<Column_Node> buildColumnMetaData(String tablename);
+
+	// æ„é€ ä¸€ä¸ªè¡¨æ‰€éœ€çš„å…ƒæ•°æ®column+index of one table
+	public void buildTableMetaData(String tablename);
+
+	// æ„é€ è¿™ä¸ªåº“æ‰€æœ‰è¡¨çš„å…ƒæ•°æ®
+	public void buildDBMetaData();
+
+	// æ ¹æ®è¡¨å,åˆ—å,è·å¾—æŒ‡å®šåˆ—çš„å…ƒæ•°æ®
+	public Column_Node searchColumnMetaData(String tablename, String column_name);
+
+	// æ ¹æ®è¡¨å,åˆ—åè·å¾—æŒ‡å®šåˆ—ä¸Šå­˜åœ¨çš„ç´¢å¼•çš„å…ƒæ•°æ®,ä¸€ä¸ªåˆ—å¯èƒ½å·²å­˜åœ¨äºå¤šä¸ªç´¢å¼•å½“ä¸­,æ‰€ä»¥è¿”å›çš„æ˜¯ä¸€ä¸ªList
+	public List<Index_Node> searchIndexMetaData(String tablename, String column_name);
+
+	// æ£€æŸ¥è¡¨ååœ¨å…ƒæ•°æ®Cacheä¸­æ˜¯å¦å­˜åœ¨
+	public boolean checkTableExist(String tablename);
+
+	/*
+	 * æ£€æŸ¥è¡¨ååœ¨ä¸šåŠ¡æ•°æ®åº“ä¸­æ˜¯å¦å­˜åœ¨,æœ‰å¯èƒ½åˆ†åº“åˆ†è¡¨,æ ¼å¼tablename_XXXX ä½¿ç”¨äº†TDDLï¼Œå¾ˆæœ‰å¯èƒ½ä¼šç¢°ä¸Šè¿™æ ·çš„tablename
+	 * è¿™äº›tablenameå­˜åœ¨SQLMAPä¸­ï¼Œéœ€è¦è½¬åŒ–åæ‰èƒ½ä½¿ç”¨ å¦‚æœå®é™…çš„è¡¨å,ä¸SQLä¸­çš„è¡¨åä¸ä¸€è‡´,éœ€è¦è®©ä¸Šå±‚çŸ¥é“
+	 */
+	public String findMatchTable(String tablename);
+
+	// æ ¹æ®è¡¨å,è·å¾—è¡¨ä¸Šçš„ç´¢å¼•,è¿™ä¸ªæ˜¯ä¸ºå‰ç«¯å±•ç¤ºæœåŠ¡çš„,åå°ç¨‹åºä¸ä¼šç”¨åˆ°è¿™ä¸ªæ¥å£
+	// æ”¯æŒå¤šè¡¨,å‚æ•°tablenamesä¼ å…¥è§„èŒƒtablename,tablename
+	// åå°çš„merge indexä¹Ÿä¼šè°ƒç”¨è¿™ä¸ªå‡½æ•°
+	// è¿”å›æ ¼å¼seller:PRIMARY(seller_id);idx_seller_nick(nick);|test1:PRIMARY(id);idx_up_uid(user_id,gmt_modified,is_delete);
+	public String getIndexesByTableName(String tablenames);
+
+	/*
+	 * ä¸å…³é—­è¿æ¥,è·å–ä¸€ä¸ªè¡¨çš„æ‰€æœ‰ç´¢å¼•
 	 */
 	public String getIndexesByTableName2(String tablenames);
 }

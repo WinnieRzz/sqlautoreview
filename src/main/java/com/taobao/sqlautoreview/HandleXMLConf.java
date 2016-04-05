@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 
-
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -26,151 +25,127 @@ import org.dom4j.io.SAXReader;
 import org.apache.log4j.Logger;
 
 /*
- * function:´¦ÀíXMLÅäÖÃµÄÒ»¸öÀà
+ * function:å¤„ç†XMLé…ç½®çš„ä¸€ä¸ªç±»
  */
 public class HandleXMLConf {
 	Element root;
-	//log4jÈÕÖ¾
-    private static Logger logger = Logger.getLogger(HandleXMLConf.class);
-	
-	public HandleXMLConf(String filename)
-	{
-        //String path = getClass().getResource("/").getPath();
-		//String sqlmapfilename="sqlreviewdb.xml";
-		//sqlmapfilename=sqlmapfilename.replaceAll("%20", " ");
-		
-		try{
-            Document dom = loadXml(filename);
-            root = dom.getRootElement();
-            if(root == null){ 
-            	logger.error("ÎŞ·¨ÕÒµ½Êı¾İ¿âÅäÖÃÎÄ¼şµÄroot¸ù½áµã,³ÌĞòÍË³ö");
-            	return;
-            }
+	// log4jæ—¥å¿—
+	private static Logger logger = Logger.getLogger(HandleXMLConf.class);
+
+	public HandleXMLConf(String filename) {
+		// String path = getClass().getResource("/").getPath();
+		// String sqlmapfilename="sqlreviewdb.xml";
+		// sqlmapfilename=sqlmapfilename.replaceAll("%20", " ");
+
+		try {
+			Document dom = loadXml(filename);
+			root = dom.getRootElement();
+			if (root == null) {
+				logger.error("æ— æ³•æ‰¾åˆ°æ•°æ®åº“é…ç½®æ–‡ä»¶çš„rootæ ¹ç»“ç‚¹,ç¨‹åºé€€å‡º");
+				return;
+			}
+		} catch (Exception e) {
+			logger.error("æ— æ³•æ‰¾åˆ°æ•°æ®åº“çš„é…ç½®æ–‡ä»¶" + filename + ",ç¨‹åºé€€å‡º");
+			return;
 		}
-        catch(Exception e)
-        {
-        	logger.error("ÎŞ·¨ÕÒµ½Êı¾İ¿âµÄÅäÖÃÎÄ¼ş"+filename+",³ÌĞòÍË³ö");
-        	return;
-        }
 	}
-	
-	public Document loadXml(String path) throws DocumentException, IOException 
-	{
-		//InputStream input = new FileInputStream(Utils.getResourceAsFile(path));
-		InputStream input=Utils.getResourceAsStream(path, "utf-8");
+
+	public Document loadXml(String path) throws DocumentException, IOException {
+		// InputStream input = new
+		// FileInputStream(Utils.getResourceAsFile(path));
+		InputStream input = Utils.getResourceAsStream(path, "utf-8");
 		SAXReader reader = new SAXReader();
 		Document doc = reader.read(input);
 		return doc;
 	}
-	
-	public String getDbConfigIP()
-    {
-		String ip="";
-        //¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	Element tmp=r.next();
-        	if(tmp.getName().equals("ip"))
-        	{
-        		ip = tmp.getData().toString();
-        	}
-        }  
-        return ip;
-    }
-	
-	public int getDbConfigPort()
-	{
-		int port=-1;
-		//¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	Element tmp=r.next();
-        	 if(tmp.getName().equals("port"))
-        	 {
-        		port = Integer.valueOf(tmp.getData().toString());
-        		break;
-        	 }
-	    }
-        return port;
+
+	public String getDbConfigIP() {
+		String ip = "";
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("ip")) {
+				ip = tmp.getData().toString();
+			}
+		}
+		return ip;
 	}
-    
-	public String getDbConfigDbname()
-	{
-		String dbname="";
-		//¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	Element tmp=r.next();
-        	 if(tmp.getName().equals("dbname"))
-        	 {
-        		dbname = tmp.getData().toString();
-        		break;
-        	 }
-	    }
-        return dbname;
+
+	public int getDbConfigPort() {
+		int port = -1;
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("port")) {
+				port = Integer.valueOf(tmp.getData().toString());
+				break;
+			}
+		}
+		return port;
 	}
-	
-	public String getDbConfigUser()
-	{
-		String user="";
-		//¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	Element tmp=r.next();
-        	 if(tmp.getName().equals("user"))
-        	 {
-        		user = tmp.getData().toString();
-        		break;
-        	 }
-	    }
-        return user;
+
+	public String getDbConfigDbname() {
+		String dbname = "";
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("dbname")) {
+				dbname = tmp.getData().toString();
+				break;
+			}
+		}
+		return dbname;
 	}
-	
-	public String getDbConfigPassword()
-	{
-		String password="";
-		//¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	Element tmp=r.next();
-        	 if(tmp.getName().equals("password"))
-        	 {
-        		password = tmp.getData().toString();
-        		break;
-        	 }
-	    }
-        return password;
+
+	public String getDbConfigUser() {
+		String user = "";
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("user")) {
+				user = tmp.getData().toString();
+				break;
+			}
+		}
+		return user;
 	}
-	
-	public int getSQLMapFileID()
-	{
-		int file_id=-1;
-		//¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	 Element tmp=r.next();
-        	 if(tmp.getName().equals("file_id"))
-        	 {
-        		 file_id = Integer.valueOf(tmp.getData().toString());
-        		 break;
-        	 }
-	    }
-        return file_id;
+
+	public String getDbConfigPassword() {
+		String password = "";
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("password")) {
+				password = tmp.getData().toString();
+				break;
+			}
+		}
+		return password;
 	}
-	
-	public String getSQLMapFileName()
-	{
-		String file_name="";
-		//¶ÁÈ¡ÅäÖÃ
-        for(Iterator<Element> r = root.elementIterator();r.hasNext();)
-        {
-        	 Element tmp=r.next();
-        	 if(tmp.getName().equals("file_name"))
-        	 {
-        		 file_name = tmp.getData().toString();
-        		 break;
-        	 }
-	    }
-        return file_name;
+
+	public int getSQLMapFileID() {
+		int file_id = -1;
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("file_id")) {
+				file_id = Integer.valueOf(tmp.getData().toString());
+				break;
+			}
+		}
+		return file_id;
+	}
+
+	public String getSQLMapFileName() {
+		String file_name = "";
+		// è¯»å–é…ç½®
+		for (Iterator<Element> r = root.elementIterator(); r.hasNext();) {
+			Element tmp = r.next();
+			if (tmp.getName().equals("file_name")) {
+				file_name = tmp.getData().toString();
+				break;
+			}
+		}
+		return file_name;
 	}
 }

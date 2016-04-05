@@ -14,27 +14,26 @@
 package com.taobao.sqlautoreview;
 
 /*
- * ±£´æÃ¿¸ö±í·ÖÎöºóµÄ½á¹û
+ * ä¿å­˜æ¯ä¸ªè¡¨åˆ†æåçš„ç»“æœ
  */
 class ParseStruct {
-	//±íÃû
+	// è¡¨å
 	public String tablename;
-	//±í±ğÃû
+	// è¡¨åˆ«å
 	public String alias_tablename;
-	//whereString
+	// whereString
 	public String whereString;
-	//whereÌõ¼ş¸ù½áµã
+	// whereæ¡ä»¶æ ¹ç»“ç‚¹
 	public Tree_Node whereNode;
-	//²éÑ¯×Ö¶Î
-    public String select_column;
-    //group by×Ö¶Î
-    public String groupbycolumn;
-    //ÅÅĞò×Ö¶Î
-    public String orderbycolumn;
-    
-    public ParseStruct()
-    {
-    	groupbycolumn="";
-    	orderbycolumn="";
-    }
+	// æŸ¥è¯¢å­—æ®µ
+	public String select_column;
+	// group byå­—æ®µ
+	public String groupbycolumn;
+	// æ’åºå­—æ®µ
+	public String orderbycolumn;
+
+	public ParseStruct() {
+		groupbycolumn = "";
+		orderbycolumn = "";
+	}
 }

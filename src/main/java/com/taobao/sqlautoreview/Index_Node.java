@@ -13,22 +13,22 @@
 package com.taobao.sqlautoreview;
 
 public class Index_Node {
-    //Êı¾İ¿âÃû
+	// æ•°æ®åº“å
 	String table_schema;
-	//±íÃû
+	// è¡¨å
 	public String table_name;
-	//ÊÇ·ñÎ¨Ò»
+	// æ˜¯å¦å”¯ä¸€
 	int non_unique;
-	//Êı¾İ¿âÃû
+	// æ•°æ®åº“å
 	String index_schema;
-	//Ë÷ÒıµÄÃû×Ö
+	// ç´¢å¼•çš„åå­—
 	public String index_name;
-	//Ë÷Òı×Ö¶ÎÔÚË÷ÒıÖĞµÄÅÅÁĞÎ»ÖÃ
+	// ç´¢å¼•å­—æ®µåœ¨ç´¢å¼•ä¸­çš„æ’åˆ—ä½ç½®
 	int seq_in_index;
-	//ÁĞÃû
+	// åˆ—å
 	String column_name;
-	//ÁĞµÄÊÆ
+	// åˆ—çš„åŠ¿
 	int Cardinality;
-	//Ë÷ÒıµÄÀàĞÍ,»ù±¾ÉÏ¶¼»áÊÇBTree
+	// ç´¢å¼•çš„ç±»å‹,åŸºæœ¬ä¸Šéƒ½ä¼šæ˜¯BTree
 	String index_type;
 }

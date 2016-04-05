@@ -20,283 +20,262 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+
 /*
- * ¶ÔÃ¿¸ötableµÄË÷Òı½øĞĞºÏ²¢
+ * å¯¹æ¯ä¸ªtableçš„ç´¢å¼•è¿›è¡Œåˆå¹¶
  * author:danchen / zhaolin
  * create_time:2012/1/30
  */
 public class MergeIndex {
-	 //log4jÈÕÖ¾
-    private static Logger logger = Logger.getLogger(MergeIndex.class);
-    //ËùÓĞµÄ±íÃû,´ÓsqlreviewdbÖĞ»ñµÃ
-    private Set<String> set_tablenames;
-    //ËùÓĞÕæÊµµÄ±íÃû,·Ö¿â·Ö±íµÄÎÊÌâ,Êµ¼ÊµÄ±íÃûÓëÉÏÃæµÄ±íÃû»áÓĞÒ»Ğ©²îÒì
-    private Set<String> set_real_tablenames;
-    //´ÓsqlreviewdbÖĞ»ñµÃµÄĞÂ´´½¨µÄË÷Òı
-    private HashMap<String, String> map_new_tablename_indexes;
-    //´ÓÄ¿±êÊı¾İ¿âÖĞ»ñµÃÒÑ¾­´æÔÚµÄË÷Òı
-    private HashMap<String, String> map_tablename_indexes;
-    private HashMap<String, String> tmp_map_tablename_indexes;
-    //×îºóºÏ²¢Ë÷ÒıºóµÄ½á¹û
-    private HashMap<String, String> map_result;
-    //²Ù×÷sqlreviewdb
-    private IHandleDB iHandleDB;
-    //²Ù×÷Ä¿±êÊı¾İ¿â,»ñÈ¡ÏàÓ¦ÔªÊı¾İ
-    private IMetaData iMetaData;
-    //sqlmapfie ID
-    private int sqlmapFileID;
-    /*
-     * ¹¹Ôìº¯Êı
-     */
-    public  MergeIndex() 
-    {
-		set_tablenames=new HashSet<String>();
-		set_real_tablenames=new HashSet<String>();
-		map_tablename_indexes=new HashMap<String, String>();
-		tmp_map_tablename_indexes=new HashMap<String, String>();
-		map_new_tablename_indexes=new HashMap<String, String>();
-		map_result=new HashMap<String, String>();
-		iHandleDB=new HandleSQLReviewDB();
-		iMetaData=new MySQLMetaData();
-		sqlmapFileID=-1000000;
+	// log4jæ—¥å¿—
+	private static Logger logger = Logger.getLogger(MergeIndex.class);
+	// æ‰€æœ‰çš„è¡¨å,ä»sqlreviewdbä¸­è·å¾—
+	private Set<String> set_tablenames;
+	// æ‰€æœ‰çœŸå®çš„è¡¨å,åˆ†åº“åˆ†è¡¨çš„é—®é¢˜,å®é™…çš„è¡¨åä¸ä¸Šé¢çš„è¡¨åä¼šæœ‰ä¸€äº›å·®å¼‚
+	private Set<String> set_real_tablenames;
+	// ä»sqlreviewdbä¸­è·å¾—çš„æ–°åˆ›å»ºçš„ç´¢å¼•
+	private HashMap<String, String> map_new_tablename_indexes;
+	// ä»ç›®æ ‡æ•°æ®åº“ä¸­è·å¾—å·²ç»å­˜åœ¨çš„ç´¢å¼•
+	private HashMap<String, String> map_tablename_indexes;
+	private HashMap<String, String> tmp_map_tablename_indexes;
+	// æœ€ååˆå¹¶ç´¢å¼•åçš„ç»“æœ
+	private HashMap<String, String> map_result;
+	// æ“ä½œsqlreviewdb
+	private IHandleDB iHandleDB;
+	// æ“ä½œç›®æ ‡æ•°æ®åº“,è·å–ç›¸åº”å…ƒæ•°æ®
+	private IMetaData iMetaData;
+	// sqlmapfie ID
+	private int sqlmapFileID;
+
+	/*
+	 * æ„é€ å‡½æ•°
+	 */
+	public MergeIndex() {
+		set_tablenames = new HashSet<String>();
+		set_real_tablenames = new HashSet<String>();
+		map_tablename_indexes = new HashMap<String, String>();
+		tmp_map_tablename_indexes = new HashMap<String, String>();
+		map_new_tablename_indexes = new HashMap<String, String>();
+		map_result = new HashMap<String, String>();
+		iHandleDB = new HandleSQLReviewDB();
+		iMetaData = new MySQLMetaData();
+		sqlmapFileID = -1000000;
 	}
-    
-    //Ç°¶Ëµ÷ÓÃµÄ¹¹Ôìº¯Êı
-	public MergeIndex(String IP,int port,String dbname,String user,String password,IHandleDB ihandleSQLReviewDB){
-		set_tablenames=new HashSet<String>();
-		set_real_tablenames=new HashSet<String>();
-		map_tablename_indexes=new HashMap<String, String>();
-		tmp_map_tablename_indexes=new HashMap<String, String>();
-		map_new_tablename_indexes=new HashMap<String, String>();
-		map_result=new HashMap<String, String>();
-		iMetaData=new MySQLMetaData(IP,port,dbname,user,password);
-		iHandleDB=ihandleSQLReviewDB;
+
+	// å‰ç«¯è°ƒç”¨çš„æ„é€ å‡½æ•°
+	public MergeIndex(String IP, int port, String dbname, String user, String password, IHandleDB ihandleSQLReviewDB) {
+		set_tablenames = new HashSet<String>();
+		set_real_tablenames = new HashSet<String>();
+		map_tablename_indexes = new HashMap<String, String>();
+		tmp_map_tablename_indexes = new HashMap<String, String>();
+		map_new_tablename_indexes = new HashMap<String, String>();
+		map_result = new HashMap<String, String>();
+		iMetaData = new MySQLMetaData(IP, port, dbname, user, password);
+		iHandleDB = ihandleSQLReviewDB;
 	}
-    /*
-     * »ñµÃÉóºË³öµÄË÷Òı
-     */
-    private void getNewIndexes(int sqlmap_file_id)
-    {
-    	//Èç¹ûÊÇÕâ¸öÖµ-1000000,½«¶ÁÈ¡ÅäÖÃÎÄ¼şsqlmapfile.xmlÖĞµÄfile_id
-    	String table_name;
-    	List<Index_Node> list_new_indexes;
-    	if(sqlmap_file_id != sqlmapFileID){
-    		sqlmapFileID=sqlmap_file_id;
-    		list_new_indexes=iHandleDB.getAllIndexes(sqlmapFileID);
-    	}else {
-    		list_new_indexes=iHandleDB.getAllIndexes();
+
+	/*
+	 * è·å¾—å®¡æ ¸å‡ºçš„ç´¢å¼•
+	 */
+	private void getNewIndexes(int sqlmap_file_id) {
+		// å¦‚æœæ˜¯è¿™ä¸ªå€¼-1000000,å°†è¯»å–é…ç½®æ–‡ä»¶sqlmapfile.xmlä¸­çš„file_id
+		String table_name;
+		List<Index_Node> list_new_indexes;
+		if (sqlmap_file_id != sqlmapFileID) {
+			sqlmapFileID = sqlmap_file_id;
+			list_new_indexes = iHandleDB.getAllIndexes(sqlmapFileID);
+		} else {
+			list_new_indexes = iHandleDB.getAllIndexes();
 		}
-    	
-    	for(Index_Node in:list_new_indexes)
-    	{
-    		//ÎŞ±íÃûµÄÊ±ºòÍË³ö
-    		if(in.table_name==null){
-    			continue;
-    		}
-    		//¶à±íÒÔ,·Ö¸ô
-    		String[] array_tablenames=in.table_name.split(",");
-    		for(int k=0;k<array_tablenames.length;k++)
-    		{
-    			table_name=array_tablenames[k];
-    			set_tablenames.add(table_name);
-    		}
-    		
-    		
-    		String[] array_indexes=in.index_name.split(";");
-    		for(int i=0;i<array_indexes.length;i++)
-    		{
-    			//Ö÷¼üË÷ÒıÖ±½ÓÅÅ³ı,Õâ¸öÒÑÖØÓÃ,²»ĞèÒªºÏ²¢
-    			if(array_indexes[i].indexOf("PRIMARY")>=0){
-    				continue;
-    			}
-    			//Î¨Ò»¼üË÷ÒıÖ±½ÓÅÅ³ı,Õâ¸öÒÑÖØÓÃ,²»ĞèÒªºÏ²¢
-    			if(array_indexes[i].indexOf("UNIQUE")>=0){
-    				continue;
-    			}
-    			//ÆäËüĞÂ½¨Ë÷Òı,ĞèÒª¼ÓÈëµ½listÀïÃæ
-    			int addr=array_indexes[i].indexOf("create index");
-    			String indexString;
-    			if(addr>=0){
-    				table_name=getTableNameByCreateIndexScript(array_indexes[i].substring(addr));
-    				indexString=map_new_tablename_indexes.get(table_name);
-    				if(indexString != null){
-    					indexString=indexString+";"+array_indexes[i].substring(addr);
-    					map_new_tablename_indexes.put(table_name, indexString);
-    				}else {
+
+		for (Index_Node in : list_new_indexes) {
+			// æ— è¡¨åçš„æ—¶å€™é€€å‡º
+			if (in.table_name == null) {
+				continue;
+			}
+			// å¤šè¡¨ä»¥,åˆ†éš”
+			String[] array_tablenames = in.table_name.split(",");
+			for (int k = 0; k < array_tablenames.length; k++) {
+				table_name = array_tablenames[k];
+				set_tablenames.add(table_name);
+			}
+
+			String[] array_indexes = in.index_name.split(";");
+			for (int i = 0; i < array_indexes.length; i++) {
+				// ä¸»é”®ç´¢å¼•ç›´æ¥æ’é™¤,è¿™ä¸ªå·²é‡ç”¨,ä¸éœ€è¦åˆå¹¶
+				if (array_indexes[i].indexOf("PRIMARY") >= 0) {
+					continue;
+				}
+				// å”¯ä¸€é”®ç´¢å¼•ç›´æ¥æ’é™¤,è¿™ä¸ªå·²é‡ç”¨,ä¸éœ€è¦åˆå¹¶
+				if (array_indexes[i].indexOf("UNIQUE") >= 0) {
+					continue;
+				}
+				// å…¶å®ƒæ–°å»ºç´¢å¼•,éœ€è¦åŠ å…¥åˆ°listé‡Œé¢
+				int addr = array_indexes[i].indexOf("create index");
+				String indexString;
+				if (addr >= 0) {
+					table_name = getTableNameByCreateIndexScript(array_indexes[i].substring(addr));
+					indexString = map_new_tablename_indexes.get(table_name);
+					if (indexString != null) {
+						indexString = indexString + ";" + array_indexes[i].substring(addr);
+						map_new_tablename_indexes.put(table_name, indexString);
+					} else {
 						map_new_tablename_indexes.put(table_name, array_indexes[i].substring(addr));
 					}
-    			}else{
-    				//
-    				logger.warn("¼ì²âµ½·Ç·¨½Å±¾");
-    			}
-    		}
-    	}
-    }
-    
-    /*
-     * ´Ó´´½¨Ë÷ÒıµÄ½Å±¾Àï·ÖÎöÖĞ±íÃû
-     */
-    private String getTableNameByCreateIndexScript(String createindexscript) 
-    {
-		int addr_on=createindexscript.indexOf(" on ");
-		int addr_left_kuohao=createindexscript.indexOf("(");
-		String table_name=createindexscript.substring(addr_on+4, addr_left_kuohao).trim();
+				} else {
+					//
+					logger.warn("æ£€æµ‹åˆ°éæ³•è„šæœ¬");
+				}
+			}
+		}
+	}
+
+	/*
+	 * ä»åˆ›å»ºç´¢å¼•çš„è„šæœ¬é‡Œåˆ†æä¸­è¡¨å
+	 */
+	private String getTableNameByCreateIndexScript(String createindexscript) {
+		int addr_on = createindexscript.indexOf(" on ");
+		int addr_left_kuohao = createindexscript.indexOf("(");
+		String table_name = createindexscript.substring(addr_on + 4, addr_left_kuohao).trim();
 		return table_name;
 	}
-    
-    /*
-     * »ñµÃËùÓĞÒÑ´æÔÚµÄË÷Òı
-     */
-    private void getExistIndexes()
-    {
-    	if(set_tablenames.size()==0){
-    		logger.warn("getExistIndexes:²»´æÔÚÈÎºÎµÄ±í");
-    		return;
-    	}
-    	
-    	String all_indexes=iMetaData.getIndexesByTableName2(getAllTables());
-    	fill_map_tablename_indexes(all_indexes);
-    }
-    
-    /*
-     * ·µ»ØÈ¥ÖØºóµÄ±íÃû×Ö·û´®
-     */
-    private String getAllTables()
-    {
-    	String tablenames="";
-    	for(Iterator<String> iterator=set_tablenames.iterator();iterator.hasNext();)
-    	{
-    		tablenames=tablenames+","+iterator.next();
-    	}
-    	tablenames=tablenames.substring(1);
-    	return tablenames;
-    }
-    /*
-     * ·Ö¼ğË÷Òı,½«²»Í¬±íµÄË÷Òı¶¼·ÅÈëµ½map_tablename_indexes hash mapÀï
-     */
-    private void fill_map_tablename_indexes(String all_indexes) 
-    {
-    	int addr_maohao;
-    	String table_name;
-    	String indexes;
-		String[] array_table_indexes=all_indexes.split("\\|");
+
+	/*
+	 * è·å¾—æ‰€æœ‰å·²å­˜åœ¨çš„ç´¢å¼•
+	 */
+	private void getExistIndexes() {
+		if (set_tablenames.size() == 0) {
+			logger.warn("getExistIndexes:ä¸å­˜åœ¨ä»»ä½•çš„è¡¨");
+			return;
+		}
+
+		String all_indexes = iMetaData.getIndexesByTableName2(getAllTables());
+		fill_map_tablename_indexes(all_indexes);
+	}
+
+	/*
+	 * è¿”å›å»é‡åçš„è¡¨åå­—ç¬¦ä¸²
+	 */
+	private String getAllTables() {
+		String tablenames = "";
+		for (Iterator<String> iterator = set_tablenames.iterator(); iterator.hasNext();) {
+			tablenames = tablenames + "," + iterator.next();
+		}
+		tablenames = tablenames.substring(1);
+		return tablenames;
+	}
+
+	/*
+	 * åˆ†æ‹£ç´¢å¼•,å°†ä¸åŒè¡¨çš„ç´¢å¼•éƒ½æ”¾å…¥åˆ°map_tablename_indexes hash mapé‡Œ
+	 */
+	private void fill_map_tablename_indexes(String all_indexes) {
+		int addr_maohao;
+		String table_name;
+		String indexes;
+		String[] array_table_indexes = all_indexes.split("\\|");
 		logger.debug(array_table_indexes.length);
 		logger.debug(getAllTables());
-		for(int i=0;i<array_table_indexes.length;i++)
-		{
-			addr_maohao=array_table_indexes[i].indexOf(":");
-			//Õâ¸ötable_nameÓĞ¿ÉÄÜÊÇ·Ö±íÃû
-			table_name=array_table_indexes[i].substring(0, addr_maohao);
-			indexes=array_table_indexes[i].substring(addr_maohao+1);
+		for (int i = 0; i < array_table_indexes.length; i++) {
+			addr_maohao = array_table_indexes[i].indexOf(":");
+			// è¿™ä¸ªtable_nameæœ‰å¯èƒ½æ˜¯åˆ†è¡¨å
+			table_name = array_table_indexes[i].substring(0, addr_maohao);
+			indexes = array_table_indexes[i].substring(addr_maohao + 1);
 			tmp_map_tablename_indexes.put(table_name, indexes);
-			//½«indexes±ä³É´´½¨Ë÷ÒıµÄ½Å±¾
-			indexes=transferToCreateIndexScript(table_name,indexes);
+			// å°†indexeså˜æˆåˆ›å»ºç´¢å¼•çš„è„šæœ¬
+			indexes = transferToCreateIndexScript(table_name, indexes);
 			map_tablename_indexes.put(table_name, indexes);
 		}
 	}
-	
-    /*
-     * ½«indexes±ä³É´´½¨Ë÷ÒıµÄ½Å±¾
-     * indexes¸ñÊ½PRIMARY(seller_id);idx_seller_nick(nick);
-     */
-	private String transferToCreateIndexScript(String table_name,String indexes) 
-	{
+
+	/*
+	 * å°†indexeså˜æˆåˆ›å»ºç´¢å¼•çš„è„šæœ¬ indexesæ ¼å¼PRIMARY(seller_id);idx_seller_nick(nick);
+	 */
+	private String transferToCreateIndexScript(String table_name, String indexes) {
 		int addr_left_kuohao;
 		String index_name;
 		String index_columns;
-		String createindexscript="";
-		String[] array_index=indexes.split(";");
-		for(int i=0;i<array_index.length;i++)
-		{
-			//ÕâÀïÕ¹Ê¾Ô­±íµÄË÷Òı,primary indexÒ²ĞèÒªÕ¹Ê¾Ò»ÏÂ
+		String createindexscript = "";
+		String[] array_index = indexes.split(";");
+		for (int i = 0; i < array_index.length; i++) {
+			// è¿™é‡Œå±•ç¤ºåŸè¡¨çš„ç´¢å¼•,primary indexä¹Ÿéœ€è¦å±•ç¤ºä¸€ä¸‹
 			/*
-			if(array_index[i].indexOf("PRIMARY")>=0){
-				continue;
+			 * if(array_index[i].indexOf("PRIMARY")>=0){ continue; }
+			 */
+			addr_left_kuohao = array_index[i].indexOf("(");
+			index_name = array_index[i].substring(0, addr_left_kuohao);
+			index_columns = array_index[i].substring(addr_left_kuohao);
+			if (createindexscript.equals("")) {
+				createindexscript = "create index " + index_name + " on " + table_name + index_columns + ";";
+			} else {
+				createindexscript = createindexscript + "create index " + index_name + " on " + table_name + index_columns + ";";
 			}
-			*/
-			addr_left_kuohao=array_index[i].indexOf("(");
-			index_name=array_index[i].substring(0, addr_left_kuohao);
-			index_columns=array_index[i].substring(addr_left_kuohao);
-			if(createindexscript.equals("")){
-				createindexscript="create index "+index_name+" on "+table_name+index_columns+";";
-			}else {
-				createindexscript=createindexscript+"create index "+index_name+" on "+table_name+index_columns+";";
-			}
-			
+
 		}
-		
+
 		return createindexscript;
 	}
-	
+
 	/*
-	 * ½«Ò»¸ö±íµÄËùÓĞ½¨Ë÷ÒıµÄ½Å±¾×ª»»³ÉÒ»¸öList<MergeIndex_Node>
+	 * å°†ä¸€ä¸ªè¡¨çš„æ‰€æœ‰å»ºç´¢å¼•çš„è„šæœ¬è½¬æ¢æˆä¸€ä¸ªList<MergeIndex_Node>
 	 */
-	private List<MergeIndex_Node> transferToListMergeIndexNode(
-			String indexscripts) 
-	{
-		if(indexscripts==null || indexscripts.length()==0){
+	private List<MergeIndex_Node> transferToListMergeIndexNode(String indexscripts) {
+		if (indexscripts == null || indexscripts.length() == 0) {
 			logger.warn("transferToListMergeIndexNode:indexscripts==null || indexscripts.length()==0");
 			return null;
 		}
-		List<MergeIndex_Node> list=new LinkedList<MergeIndex_Node>();
-		String[] array_index_script=indexscripts.split(";");
-		for(int i=0;i<array_index_script.length;i++)
-		{
-			MergeIndex_Node mergeIndex_Node=new MergeIndex_Node(array_index_script[i]);
+		List<MergeIndex_Node> list = new LinkedList<MergeIndex_Node>();
+		String[] array_index_script = indexscripts.split(";");
+		for (int i = 0; i < array_index_script.length; i++) {
+			MergeIndex_Node mergeIndex_Node = new MergeIndex_Node(array_index_script[i]);
 			list.add(mergeIndex_Node);
 		}
-		
+
 		return list;
 	}
-	
+
 	/*
-	 * Íâ²¿µ÷ÓÃµÄ·½·¨
-	 * ½«ËùÓĞ±íµÄË÷Òı½øĞĞºÏ²¢
+	 * å¤–éƒ¨è°ƒç”¨çš„æ–¹æ³• å°†æ‰€æœ‰è¡¨çš„ç´¢å¼•è¿›è¡Œåˆå¹¶
 	 */
-	public void mergeAllTableIndexes(int sqlmap_file_id) 
-	{
+	public void mergeAllTableIndexes(int sqlmap_file_id) {
 		String table_name;
 		String real_table_name;
 		String exist_indexes;
 		String new_indexes;
 		String last_indexes;
-	    List<MergeIndex_Node> list_table_new_indexes;
-	    List<MergeIndex_Node> list_table_exist_index;
-	    //±£´æ·µ»Ø½á¹û
-	    List<String> list;
-	    
-	    
-	    //Ìî³åÏÂÃæÈı¸öÊı¾İ½á¹¹
-	    //set_tablenames;
-	    //map_new_tablename_indexes;
-	    //map_tablename_indexes;
-	    //ÏÂÃæÁ½¸öº¯ÊıµÄË³Ğò²»ÄÜ¹»µ÷»»
-	    getNewIndexes(sqlmap_file_id);
-	    getExistIndexes();
-	    
-	    
-		for(Iterator<String> iterator=set_tablenames.iterator();iterator.hasNext();)
-		{
-			table_name=iterator.next();
-			//·Ö¿â·Ö±í,±íÃûĞèÒª´¦Àí
-			real_table_name=iMetaData.findMatchTable(table_name);
-			if(real_table_name==null){
-				logger.warn("mergeAllTableIndexes: Table "+table_name+" doesn't exist.");
+		List<MergeIndex_Node> list_table_new_indexes;
+		List<MergeIndex_Node> list_table_exist_index;
+		// ä¿å­˜è¿”å›ç»“æœ
+		List<String> list;
+
+		// å¡«å†²ä¸‹é¢ä¸‰ä¸ªæ•°æ®ç»“æ„
+		// set_tablenames;
+		// map_new_tablename_indexes;
+		// map_tablename_indexes;
+		// ä¸‹é¢ä¸¤ä¸ªå‡½æ•°çš„é¡ºåºä¸èƒ½å¤Ÿè°ƒæ¢
+		getNewIndexes(sqlmap_file_id);
+		getExistIndexes();
+
+		for (Iterator<String> iterator = set_tablenames.iterator(); iterator.hasNext();) {
+			table_name = iterator.next();
+			// åˆ†åº“åˆ†è¡¨,è¡¨åéœ€è¦å¤„ç†
+			real_table_name = iMetaData.findMatchTable(table_name);
+			if (real_table_name == null) {
+				logger.warn("mergeAllTableIndexes: Table " + table_name + " doesn't exist.");
 				continue;
 			}
-			if(!real_table_name.equals(table_name)){
-				//·¢ÉúÁË±íÃûÌæ»»
-				table_name=real_table_name;
+			if (!real_table_name.equals(table_name)) {
+				// å‘ç”Ÿäº†è¡¨åæ›¿æ¢
+				table_name = real_table_name;
 			}
-			//±£´æ´¦ÀíµÄÕæÊµ±íÃû
+			// ä¿å­˜å¤„ç†çš„çœŸå®è¡¨å
 			set_real_tablenames.add(table_name);
-			exist_indexes=map_tablename_indexes.get(table_name);
-			new_indexes=map_new_tablename_indexes.get(table_name);
-			list_table_exist_index=transferToListMergeIndexNode(exist_indexes);
-			list_table_new_indexes=transferToListMergeIndexNode(new_indexes);
-			TableMergeIndex tmi=new TableMergeIndex(table_name);
-			list=tmi.tableMergeIndexService(list_table_exist_index, list_table_new_indexes);
-			last_indexes=getLastIndexesFromList(list);
+			exist_indexes = map_tablename_indexes.get(table_name);
+			new_indexes = map_new_tablename_indexes.get(table_name);
+			list_table_exist_index = transferToListMergeIndexNode(exist_indexes);
+			list_table_new_indexes = transferToListMergeIndexNode(new_indexes);
+			TableMergeIndex tmi = new TableMergeIndex(table_name);
+			list = tmi.tableMergeIndexService(list_table_exist_index, list_table_new_indexes);
+			last_indexes = getLastIndexesFromList(list);
 			map_result.put(table_name, last_indexes);
 		}
 		saveToSqlReviewDb(sqlmap_file_id);
@@ -304,62 +283,56 @@ public class MergeIndex {
 	}
 
 	/*
-	 * ½«merge½á¹û±£´æµ½Êı¾İ¿âÖĞ
+	 * å°†mergeç»“æœä¿å­˜åˆ°æ•°æ®åº“ä¸­
 	 */
-	private void saveToSqlReviewDb(int sqlmap_file_id) 
-	{
+	private void saveToSqlReviewDb(int sqlmap_file_id) {
 		String tablename;
 		String real_tablename;
 		String exist_indexes;
 		String new_indexes;
 		String merge_result;
-		//ÏÈÉ¾³ıÉÏÒ»´ÎµÄmerge½á¹û
+		// å…ˆåˆ é™¤ä¸Šä¸€æ¬¡çš„mergeç»“æœ
 		iHandleDB.deleteMergeResult(sqlmap_file_id);
-		for(Iterator<String> iterator=set_real_tablenames.iterator();iterator.hasNext();)
-		{
-			tablename="";
-			real_tablename=iterator.next();
-			exist_indexes=tmp_map_tablename_indexes.get(real_tablename);
-			new_indexes=map_new_tablename_indexes.get(real_tablename);
-			merge_result=map_result.get(real_tablename);
-			if(!set_tablenames.contains(real_tablename)){
-				for(Iterator<String> iterator2=set_tablenames.iterator();iterator2.hasNext();)
-				{
-					String tmp_tablename=iterator2.next();
-					if(real_tablename.indexOf(tmp_tablename)==0){
-						tablename=tmp_tablename;
+		for (Iterator<String> iterator = set_real_tablenames.iterator(); iterator.hasNext();) {
+			tablename = "";
+			real_tablename = iterator.next();
+			exist_indexes = tmp_map_tablename_indexes.get(real_tablename);
+			new_indexes = map_new_tablename_indexes.get(real_tablename);
+			merge_result = map_result.get(real_tablename);
+			if (!set_tablenames.contains(real_tablename)) {
+				for (Iterator<String> iterator2 = set_tablenames.iterator(); iterator2.hasNext();) {
+					String tmp_tablename = iterator2.next();
+					if (real_tablename.indexOf(tmp_tablename) == 0) {
+						tablename = tmp_tablename;
 						break;
 					}
 				}
-			}else {
-				tablename=real_tablename;
+			} else {
+				tablename = real_tablename;
 			}
-		    iHandleDB.saveMergeResult(sqlmap_file_id, tablename, real_tablename, exist_indexes, new_indexes, merge_result);
+			iHandleDB.saveMergeResult(sqlmap_file_id, tablename, real_tablename, exist_indexes, new_indexes, merge_result);
 		}
-		
-		
+
 	}
 
 	/*
-	 * Ê¾ÀıÊä³ö×îºóµÄmerge½á¹û
+	 * ç¤ºä¾‹è¾“å‡ºæœ€åçš„mergeç»“æœ
 	 */
-	private void print_merge_result() 
-	{
+	private void print_merge_result() {
 		String tablename;
 		String exist_indexes;
 		String new_indexes;
 		String result_indexes;
-		for(Iterator<String> iterator=set_real_tablenames.iterator();iterator.hasNext();)
-		{
-			tablename=iterator.next();
-			exist_indexes=tmp_map_tablename_indexes.get(tablename);
-			new_indexes=map_new_tablename_indexes.get(tablename);
-			result_indexes=map_result.get(tablename);
+		for (Iterator<String> iterator = set_real_tablenames.iterator(); iterator.hasNext();) {
+			tablename = iterator.next();
+			exist_indexes = tmp_map_tablename_indexes.get(tablename);
+			new_indexes = map_new_tablename_indexes.get(tablename);
+			result_indexes = map_result.get(tablename);
 			logger.info("---------------------------------------------------");
-			logger.info("Table "+tablename+" Merge index information as follows:");
+			logger.info("Table " + tablename + " Merge index information as follows:");
 			logger.info("---------------------------------------------------");
-			if(!set_tablenames.contains(tablename)){
-				logger.warn("·Ö¿â·Ö±íÌáÊ¾:"+tablename+" ÊÇ×Ó±í.");
+			if (!set_tablenames.contains(tablename)) {
+				logger.warn("åˆ†åº“åˆ†è¡¨æç¤º:" + tablename + " æ˜¯å­è¡¨.");
 			}
 			logger.info("Exist indexes as follows:");
 			print_index(exist_indexes);
@@ -368,45 +341,40 @@ public class MergeIndex {
 			logger.info("Result indexes as follows:");
 			print_index(result_indexes);
 		}
-		
+
 	}
 
-	private void print_index(String str_indexes)
-	{
-		if(str_indexes==null) return;
-		String[] array_indexes=str_indexes.split(";");
-        for(int i=0;i<array_indexes.length;i++)
-        {
-      	  logger.info(array_indexes[i]);
-        }
+	private void print_index(String str_indexes) {
+		if (str_indexes == null) return;
+		String[] array_indexes = str_indexes.split(";");
+		for (int i = 0; i < array_indexes.length; i++) {
+			logger.info(array_indexes[i]);
+		}
 	}
-	
+
 	/*
-	 * ½«ListÖĞµÄindexÆ´½Ó³É×Ö·û´®µÄ·½Ê½
+	 * å°†Listä¸­çš„indexæ‹¼æ¥æˆå­—ç¬¦ä¸²çš„æ–¹å¼
 	 */
-	private String getLastIndexesFromList(List<String> list) 
-	{
-		String last_indexes="";
-		if(list==null ||list.size()==0){
+	private String getLastIndexesFromList(List<String> list) {
+		String last_indexes = "";
+		if (list == null || list.size() == 0) {
 			return last_indexes;
 		}
-		
-		for(Iterator<String> iterator=list.iterator();iterator.hasNext();)
-		{
-			last_indexes=last_indexes+";"+iterator.next();
+
+		for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
+			last_indexes = last_indexes + ";" + iterator.next();
 		}
-		last_indexes=last_indexes.substring(1);
+		last_indexes = last_indexes.substring(1);
 		return last_indexes;
 	}
 
 	/*
-	 * ²âÊÔÓÃµÄmain
+	 * æµ‹è¯•ç”¨çš„main
 	 */
-	public static void main(String[] args)
-	{
-		MergeIndex mIndex=new MergeIndex();
-		//Èç¹ûÊÇÕâ¸öÖµ-1000000,½«¶ÁÈ¡ÅäÖÃÎÄ¼şsqlmapfile.xmlÖĞµÄfile_id
-		//×Ô²â¾ÍÓÃÕâ¸öÖµ
+	public static void main(String[] args) {
+		MergeIndex mIndex = new MergeIndex();
+		// å¦‚æœæ˜¯è¿™ä¸ªå€¼-1000000,å°†è¯»å–é…ç½®æ–‡ä»¶sqlmapfile.xmlä¸­çš„file_id
+		// è‡ªæµ‹å°±ç”¨è¿™ä¸ªå€¼
 		mIndex.mergeAllTableIndexes(-1000000);
 	}
 }

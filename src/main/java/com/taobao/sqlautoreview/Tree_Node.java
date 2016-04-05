@@ -14,25 +14,24 @@
 package com.taobao.sqlautoreview;
 
 public class Tree_Node {
-	  //µ±Ç°½áµãµÄÄÚÈÝ
-      public String node_content; 
-      //ÀàÐÍ:ÁÐÃû 1;²Ù×÷·û>,<,=,>=,<= in like is 2;value 3;Ìõ¼þÔËËã·û and or 4
-      public int node_type;
-      //×ó×ÓÊ÷
-      public Tree_Node left_node;
-      //ÓÒ×ÓÊ÷
-      public Tree_Node right_node;
-      //¸¸Ç×
-      public Tree_Node parent_node;
-      
-      //³õÊ¼»¯Õâ¸ö½áµãµÄÄÚÈÝ
-      public Tree_Node()
-      {
-    	  node_content=null;
-    	  node_type=-1;
-    	  left_node=null;
-    	  right_node=null;
-    	  parent_node=null;
-      }
-      
+	// å½“å‰ç»“ç‚¹çš„å†…å®¹
+	public String node_content;
+	// ç±»åž‹:åˆ—å 1;æ“ä½œç¬¦>,<,=,>=,<= in like is 2;value 3;æ¡ä»¶è¿ç®—ç¬¦ and or 4
+	public int node_type;
+	// å·¦å­æ ‘
+	public Tree_Node left_node;
+	// å³å­æ ‘
+	public Tree_Node right_node;
+	// çˆ¶äº²
+	public Tree_Node parent_node;
+
+	// åˆå§‹åŒ–è¿™ä¸ªç»“ç‚¹çš„å†…å®¹
+	public Tree_Node() {
+		node_content = null;
+		node_type = -1;
+		left_node = null;
+		right_node = null;
+		parent_node = null;
+	}
+
 }

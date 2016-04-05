@@ -13,26 +13,24 @@
 
 package com.taobao.sqlautoreview;
 
-//±£´æ±íÓë±íÖ®¼äµÄ¹ØÏµ,Ö»±£´æ±íÃûÓë¹ØÁª¼ü
-class Table_Relationship
-{
-	//±íÃû
+//ä¿å­˜è¡¨ä¸è¡¨ä¹‹é—´çš„å…³ç³»,åªä¿å­˜è¡¨åä¸å…³è”é”®
+class Table_Relationship {
+	// è¡¨å
 	String tablename;
-	//±íµÄ±ğÃû
+	// è¡¨çš„åˆ«å
 	String alias_tablename;
-	//Á¬½ÓÉÏÒ»¸ö±íµÄ¹ØÁª¼ü
+	// è¿æ¥ä¸Šä¸€ä¸ªè¡¨çš„å…³è”é”®
 	String columnname1;
-	//Á¬½ÓÏÂÒ»¸ö±íµÄ¹ØÁª¼ü
+	// è¿æ¥ä¸‹ä¸€ä¸ªè¡¨çš„å…³è”é”®
 	String columnname2;
-	//ÔÚ´Ë²éÑ¯Ìõ¼şÏÂ£¬±íµÄCard
+	// åœ¨æ­¤æŸ¥è¯¢æ¡ä»¶ä¸‹ï¼Œè¡¨çš„Card
 	int Cardinality;
-	
-	public Table_Relationship()
-	{
-		tablename="";
-		alias_tablename="";
-		columnname1="";
-		columnname2="";
-		Cardinality=0;
+
+	public Table_Relationship() {
+		tablename = "";
+		alias_tablename = "";
+		columnname1 = "";
+		columnname2 = "";
+		Cardinality = 0;
 	}
 }

@@ -30,333 +30,291 @@ import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 
-
-
-
 /*
- * function:½«xmlÖĞµÄsql½âÎö³öÀ´,²¢±£´æµ½Êı¾İ¿âÖĞ
+ * function:å°†xmlä¸­çš„sqlè§£æå‡ºæ¥,å¹¶ä¿å­˜åˆ°æ•°æ®åº“ä¸­
  */
 public class XmlToSQL {
-	//log4jÈÕÖ¾
+	// log4jæ—¥å¿—
 	private static Logger logger = Logger.getLogger(XmlToSQL.class);
-	//SQL MAP FILE id
+	// SQL MAP FILE id
 	int sqlmap_file_id;
-	//ĞèÒª´¦ÀíµÄSQL MAP FILE
+	// éœ€è¦å¤„ç†çš„SQL MAP FILE
 	String sqlmapfilename;
-	//±£´æÒıÓÃ
-	HashMap<String,String> hash;
-	//Êı¾İÔ´²Ù×÷
-	IHandleDB wsdb ;
-	//¹¹Ôìº¯Êı
-	public XmlToSQL(IHandleDB iHandleSQLReviewDB,int sqlmap_file_id,String sqlmapfilename){
-		 this.sqlmap_file_id = sqlmap_file_id;
-		 this.sqlmapfilename = sqlmapfilename;
-		 this.hash = new HashMap<String,String>();
-		 this.wsdb=iHandleSQLReviewDB;
+	// ä¿å­˜å¼•ç”¨
+	HashMap<String, String> hash;
+	// æ•°æ®æºæ“ä½œ
+	IHandleDB wsdb;
+
+	// æ„é€ å‡½æ•°
+	public XmlToSQL(IHandleDB iHandleSQLReviewDB, int sqlmap_file_id, String sqlmapfilename) {
+		this.sqlmap_file_id = sqlmap_file_id;
+		this.sqlmapfilename = sqlmapfilename;
+		this.hash = new HashMap<String, String>();
+		this.wsdb = iHandleSQLReviewDB;
 	}
-	//¹¹Ôìº¯Êı
-	public XmlToSQL()
-	{
-		HandleXMLConf sqlmapfileconf=new HandleXMLConf("sqlmapfile.xml");
-		this.sqlmap_file_id=sqlmapfileconf.getSQLMapFileID();
-		this.sqlmapfilename=sqlmapfileconf.getSQLMapFileName();
-		this.hash = new HashMap<String,String>();
-		this.wsdb=new HandleSQLReviewDB();
+
+	// æ„é€ å‡½æ•°
+	public XmlToSQL() {
+		HandleXMLConf sqlmapfileconf = new HandleXMLConf("sqlmapfile.xml");
+		this.sqlmap_file_id = sqlmapfileconf.getSQLMapFileID();
+		this.sqlmapfilename = sqlmapfileconf.getSQLMapFileName();
+		this.hash = new HashMap<String, String>();
+		this.wsdb = new HandleSQLReviewDB();
 	}
-	
-	//ÕıÔò±í´ïÊ½£¬ÃÀ»¯SQL
+
+	// æ­£åˆ™è¡¨è¾¾å¼ï¼Œç¾åŒ–SQL
 	public static String delByPattern(String str) {
-	      Pattern p = Pattern.compile(" {2,}");
-	      Matcher m = p.matcher(str);
-	      String result = m.replaceAll(" ");
-	      return result;
-	   }
-	
+		Pattern p = Pattern.compile(" {2,}");
+		Matcher m = p.matcher(str);
+		String result = m.replaceAll(" ");
+		return result;
+	}
+
 	public static String formatSql(String unFormatSql) {
-	      String newSql = unFormatSql.trim().replace("\n", " ")
-	            .replace("\t", " ").replace("\r", " ").replace("\f", " ");
-	    
-	      return delByPattern(newSql);
-	   }
-	   
-	   
+		String newSql = unFormatSql.trim().replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("\f", " ");
+
+		return delByPattern(newSql);
+	}
 
 	/**
-	 * ¼ÓÔØXMLÎÄ¼ş³ÉÎªÎÄµµ¶ÔÏó
-	 *  
+	 * åŠ è½½XMLæ–‡ä»¶æˆä¸ºæ–‡æ¡£å¯¹è±¡
 	 */
 	private Document loadXml(String path) throws DocumentException, FileNotFoundException {
-		//×¢ÒâÕâÀïÊ¹ÓÃµÄÊÇFileInptStream£¬¶ø²»ÊÇFileReader
+		// æ³¨æ„è¿™é‡Œä½¿ç”¨çš„æ˜¯FileInptStreamï¼Œè€Œä¸æ˜¯FileReader
 		InputStream input = new FileInputStream(path);
 		SAXReader reader = new SAXReader();
 		Document doc = reader.read(input);
 		return doc;
 	}
-	
-	
+
 	/*
-	 * µÚ¶ş´úxml½âÎöÆ÷,µÃµ½ÕæÕıµÄSQLÓï¾ä
-	 * 1.´¦Àí<![CDATA[<=]]>
-	 * 2.´¦Àíinclude
-	 * 3.´¦Àíprepend
+	 * ç¬¬äºŒä»£xmlè§£æå™¨,å¾—åˆ°çœŸæ­£çš„SQLè¯­å¥ 1.å¤„ç†<![CDATA[<=]]> 2.å¤„ç†include 3.å¤„ç†prepend
 	 */
-	private String getRealSQL(Element sqlElement)
-	{
-		String sql_xml= sqlElement.asXML();
-		//³¤¶È
-		int sql_length=sql_xml.length();
-		//×îÖÕ·µ»ØµÄSQL
-		String last_sql="";
-		//>µÄµØÖ·
+	private String getRealSQL(Element sqlElement) {
+		String sql_xml = sqlElement.asXML();
+		// é•¿åº¦
+		int sql_length = sql_xml.length();
+		// æœ€ç»ˆè¿”å›çš„SQL
+		String last_sql = "";
+		// >çš„åœ°å€
 		int addr_right_kuohao;
-		//prependµÄµØÖ·
+		// prependçš„åœ°å€
 		int addr_prepend;
-		//<>ÖĞµÄ×Ó×Ö·û´®
+		// <>ä¸­çš„å­å­—ç¬¦ä¸²
 		String sub_sql_xml;
-		//ÒıÓÃµÄID
+		// å¼•ç”¨çš„ID
 		String refid;
-		//ÌøÔ½µÄ²½Êı
-		int skip_step=0;
-		for(int i=0;i<sql_length;i++)
-		{
-			if(skip_step>0)
-			{
+		// è·³è¶Šçš„æ­¥æ•°
+		int skip_step = 0;
+		for (int i = 0; i < sql_length; i++) {
+			if (skip_step > 0) {
 				skip_step--;
 				continue;
 			}
-			if(sql_xml.substring(i,i+1).equals("<")==true)
-			{
-				addr_right_kuohao=sql_xml.indexOf(">", i);
-				sub_sql_xml=sql_xml.substring(i, addr_right_kuohao);
-				//ÕâÖÖÇé¿öĞèÒªÖØĞÂ¼ÆËãÓÒÀ¨ºÅÎ»ÖÃ
-				if(sub_sql_xml.indexOf("![CDATA[")>0)
-				{
-					addr_right_kuohao=sql_xml.indexOf(">", sql_xml.indexOf("]]", i));
-					sub_sql_xml=sql_xml.substring(i, addr_right_kuohao);
+			if (sql_xml.substring(i, i + 1).equals("<") == true) {
+				addr_right_kuohao = sql_xml.indexOf(">", i);
+				sub_sql_xml = sql_xml.substring(i, addr_right_kuohao);
+				// è¿™ç§æƒ…å†µéœ€è¦é‡æ–°è®¡ç®—å³æ‹¬å·ä½ç½®
+				if (sub_sql_xml.indexOf("![CDATA[") > 0) {
+					addr_right_kuohao = sql_xml.indexOf(">", sql_xml.indexOf("]]", i));
+					sub_sql_xml = sql_xml.substring(i, addr_right_kuohao);
 				}
-				//µ±Ç°Ö»´¦ÀíÈçÏÂµÄÈıÖÖ±êÇ©,ÆäËü±êÇ©È«²¿¹ıÂËµô 
-				if(sub_sql_xml.indexOf("include")>0 && sub_sql_xml.indexOf("refid")>0)
-				{
-					//include
-					refid=sub_sql_xml.substring(sub_sql_xml.indexOf("\"")+1, sub_sql_xml.lastIndexOf("\"")).trim();
-					String refsql=hash.get(refid);
-					if(refsql==null){
-						if(refid.indexOf(".")>0 && (hash.get(refid.substring(refid.indexOf(".")+1))) != null)
-						{
-							refsql=hash.get(refid.substring(refid.indexOf(".")+1));
-							last_sql=last_sql+refsql;
-							logger.warn("±¾ÌõSQL³öÏÖÁË·Ç³£¹æÒıÓÃ,³¢ÊÔ´¦Àí³É¹¦.");
-						}else {
-							logger.error("±¾ÌõSQLµÄÒıÓÃÎŞ·¨´¦Àí.");
+				// å½“å‰åªå¤„ç†å¦‚ä¸‹çš„ä¸‰ç§æ ‡ç­¾,å…¶å®ƒæ ‡ç­¾å…¨éƒ¨è¿‡æ»¤æ‰
+				if (sub_sql_xml.indexOf("include") > 0 && sub_sql_xml.indexOf("refid") > 0) {
+					// include
+					refid = sub_sql_xml.substring(sub_sql_xml.indexOf("\"") + 1, sub_sql_xml.lastIndexOf("\"")).trim();
+					String refsql = hash.get(refid);
+					if (refsql == null) {
+						if (refid.indexOf(".") > 0 && (hash.get(refid.substring(refid.indexOf(".") + 1))) != null) {
+							refsql = hash.get(refid.substring(refid.indexOf(".") + 1));
+							last_sql = last_sql + refsql;
+							logger.warn("æœ¬æ¡SQLå‡ºç°äº†éå¸¸è§„å¼•ç”¨,å°è¯•å¤„ç†æˆåŠŸ.");
+						} else {
+							logger.error("æœ¬æ¡SQLçš„å¼•ç”¨æ— æ³•å¤„ç†.");
 						}
-					}else{
-						last_sql=last_sql+refsql;
+					} else {
+						last_sql = last_sql + refsql;
 					}
+				} else if (sub_sql_xml.indexOf("![CDATA[") > 0) {
+					// CDATA
+					last_sql = last_sql + sub_sql_xml.substring(sub_sql_xml.indexOf("![CDATA[") + 8, sub_sql_xml.indexOf("]]"));
+				} else if (sub_sql_xml.indexOf("prepend") > 0) {
+					// prepend
+					addr_prepend = sub_sql_xml.indexOf("prepend");
+					int addr_first_yinhao = sub_sql_xml.indexOf("\"", addr_prepend);
+					int addr_last_yinhao = sub_sql_xml.indexOf("\"", addr_first_yinhao + 1);
+					last_sql = last_sql + sub_sql_xml.substring(addr_first_yinhao + 1, addr_last_yinhao);
 				}
-				else if(sub_sql_xml.indexOf("![CDATA[")>0)
-				{
-					//CDATA
-					last_sql=last_sql+sub_sql_xml.substring(sub_sql_xml.indexOf("![CDATA[")+8, sub_sql_xml.indexOf("]]"));
-				}
-				else if(sub_sql_xml.indexOf("prepend")>0)
-				{
-					//prepend
-					addr_prepend=sub_sql_xml.indexOf("prepend");
-					int addr_first_yinhao=sub_sql_xml.indexOf("\"", addr_prepend);
-					int addr_last_yinhao=sub_sql_xml.indexOf("\"", addr_first_yinhao+1);
-					last_sql=last_sql+sub_sql_xml.substring(addr_first_yinhao+1, addr_last_yinhao);	
-				}
-				//¼ÆËãÌøÔ½µÄ²½³¤
-				skip_step=sub_sql_xml.length();
+				// è®¡ç®—è·³è¶Šçš„æ­¥é•¿
+				skip_step = sub_sql_xml.length();
+			} else {
+				last_sql = last_sql + sql_xml.substring(i, i + 1);
 			}
-			else {
-				last_sql=last_sql+sql_xml.substring(i, i+1);
-			}
-		}//end for
-		
+		} // end for
+
 		return last_sql;
 	}
-	
+
 	/*
-	 * ¶ÔÓÚÒıÓÃµÄSQL,ĞèÒªfollowÈçÏÂµÄxml¹æ·¶
-	 * <sql id=>
-	 * °ÑËùÓĞ¿ÉÄÜ³öÏÖÒıÓÃµÄSQLÍ³Ò»±£´æµ½Ò»¸öhashmapÀï
+	 * å¯¹äºå¼•ç”¨çš„SQL,éœ€è¦followå¦‚ä¸‹çš„xmlè§„èŒƒ <sql id=> æŠŠæ‰€æœ‰å¯èƒ½å‡ºç°å¼•ç”¨çš„SQLç»Ÿä¸€ä¿å­˜åˆ°ä¸€ä¸ªhashmapé‡Œ
 	 */
 	@SuppressWarnings("unchecked")
-	private void dealInclude(Element root)
-	{
+	private void dealInclude(Element root) {
 		String refid;
 		String refsql;
 		Element sqlElement;
-		for( Iterator<Element> iterator = root.elementIterator();iterator.hasNext();)
-		{
-		    sqlElement=iterator.next();
-		    if(sqlElement.getName().equals("sql") && sqlElement.attributeValue("id") !=null)
-		    {
-		    	refid=sqlElement.attributeValue("id");
-				refsql=getRealSQL(sqlElement);
+		for (Iterator<Element> iterator = root.elementIterator(); iterator.hasNext();) {
+			sqlElement = iterator.next();
+			if (sqlElement.getName().equals("sql") && sqlElement.attributeValue("id") != null) {
+				refid = sqlElement.attributeValue("id");
+				refsql = getRealSQL(sqlElement);
 				hash.put(refid, refsql);
-		    }
-		    else {
+			} else {
 				continue;
 			}
 		}
 	}
-	
+
 	/*
-	 * È¡µÃÏÂÒ»¸öµ¥´Ê,Óöµ½µ¥´ÊºóµÄ¿Õ¸ñºóÍ£Ö¹
+	 * å–å¾—ä¸‹ä¸€ä¸ªå•è¯,é‡åˆ°å•è¯åçš„ç©ºæ ¼ååœæ­¢
 	 */
-    private String getNextToken(String str,int from_addr)
-    {
-    	String token="";
-    	//²ÎÊı°²È«¼ì²é
-    	if(str==null || str.length()<from_addr){
-    		return null;
-    	}
-    	//¿Õ¸ñ
-    	while(from_addr<str.length() && str.substring(from_addr, from_addr+1).equals(" "))
-    	{
-    		from_addr++;
-    	}
-    	//¼ì²éÍË³öÌõ¼ş
-    	if(from_addr>str.length()){
-    		return null;
-    	}
-    	//token
-    	while(from_addr<str.length() && str.substring(from_addr, from_addr+1).equals(" ")==false)
-    	{
-    		token=token+str.substring(from_addr, from_addr+1);
-    		from_addr++;
-    	}
-    	
-    	return token;
-    }
-    
+	private String getNextToken(String str, int from_addr) {
+		String token = "";
+		// å‚æ•°å®‰å…¨æ£€æŸ¥
+		if (str == null || str.length() < from_addr) {
+			return null;
+		}
+		// ç©ºæ ¼
+		while (from_addr < str.length() && str.substring(from_addr, from_addr + 1).equals(" ")) {
+			from_addr++;
+		}
+		// æ£€æŸ¥é€€å‡ºæ¡ä»¶
+		if (from_addr > str.length()) {
+			return null;
+		}
+		// token
+		while (from_addr < str.length() && str.substring(from_addr, from_addr + 1).equals(" ") == false) {
+			token = token + str.substring(from_addr, from_addr + 1);
+			from_addr++;
+		}
+
+		return token;
+	}
+
 	/*
-	 * ¶ÔSQL½øĞĞÔ¤´¦Àí,¶Ô³£¼ûÎÊÌâ,½øĞĞ¹ıÂË
+	 * å¯¹SQLè¿›è¡Œé¢„å¤„ç†,å¯¹å¸¸è§é—®é¢˜,è¿›è¡Œè¿‡æ»¤
 	 */
-	private String preDealSql(String sqlString) 
-	{
+	private String preDealSql(String sqlString) {
 		int addr_where;
 		int addr_first_and;
-		if(sqlString==null) return null;
-		sqlString=sqlString.toLowerCase();
-		//½«whereºóµÄµÚÒ»¸öandÉ¾³ı
-		addr_where=sqlString.indexOf(" where ");
-		if(addr_where>0 && addr_where+7<sqlString.length()){
-			if(getNextToken(sqlString, addr_where+7).equals("and"))
-			{
-				//whereºóµÚÒ»¸ö´Ê³öÏÖÁËand
-				addr_first_and=sqlString.indexOf("and", addr_where+7);
-				sqlString=sqlString.substring(0, addr_first_and)+sqlString.substring(addr_first_and+3);
+		if (sqlString == null) return null;
+		sqlString = sqlString.toLowerCase();
+		// å°†whereåçš„ç¬¬ä¸€ä¸ªandåˆ é™¤
+		addr_where = sqlString.indexOf(" where ");
+		if (addr_where > 0 && addr_where + 7 < sqlString.length()) {
+			if (getNextToken(sqlString, addr_where + 7).equals("and")) {
+				// whereåç¬¬ä¸€ä¸ªè¯å‡ºç°äº†and
+				addr_first_and = sqlString.indexOf("and", addr_where + 7);
+				sqlString = sqlString.substring(0, addr_first_and) + sqlString.substring(addr_first_and + 3);
 			}
 		}
-		
-		sqlString=sqlString.replace("&gt;", ">");
-		sqlString=sqlString.replace("&lt;", "<");
+
+		sqlString = sqlString.replace("&gt;", ">");
+		sqlString = sqlString.replace("&lt;", "<");
 		return sqlString;
 	}
+
 	/**
-	 * ¶ÁSQL MAPÎÄ¼ş,½âÎö³öSQLÓï¾ä
-	 *  	
+	 * è¯»SQL MAPæ–‡ä»¶,è§£æå‡ºSQLè¯­å¥
+	 * 
 	 * @throws DocumentException
 	 */
 	private void readSqlMap() throws DocumentException {
 		Element root;
-		if(sqlmapfilename==null) return;     
-		try{
-            Document dom = loadXml(sqlmapfilename);
-            root = dom.getRootElement();
-            if(root == null){ 
-            	logger.error("can not find sql map file xml root node,sqlautoreview program exit.");
-            	return;
-            }
+		if (sqlmapfilename == null) return;
+		try {
+			Document dom = loadXml(sqlmapfilename);
+			root = dom.getRootElement();
+			if (root == null) {
+				logger.error("can not find sql map file xml root node,sqlautoreview program exit.");
+				return;
+			}
+		} catch (FileNotFoundException e) {
+			logger.error("the sql-map-file don't exist,please check the path.");
+			return;
 		}
-        catch(FileNotFoundException e)
-        {
-        	logger.error("the sql-map-file don't exist,please check the path.");
-        	return;
-        }
-            
-            //ÏÈ±£´æÒ»ÏÂÒıÓÃµÄ SQL
-            dealInclude(root);
-            //Element½áµã
-    		Element sqlElement = null;
-    		//Ñ­»·¿ØÖÆ
-    		int max_loop_count=0; 
-    		//±£´æ´¦Àí¹ıºóµÄSQL
-    		String real_sql; 
-    		//±£´æ¿ª·¢±àĞ´µÄSQL×¢½â
-    		String commentString=""; 
-    		//³Ö¾Ã»¯µ½Êı¾İ¿âµÄ¶ÔÏó
 
-    		for (int i=0; i < root.nodeCount(); i++)
-    		{
-    			//Ñ­»·´ÎÊı¿ØÖÆ,³¬¹ı100000´Î,Ç¿ÖÆÍË³öÑ­»·
-    			max_loop_count++;
-    		    if(max_loop_count>100000)
-    		    {
-    		    	logger.error("the sql map file has more than 100000 sqls.Sql reveiw exit. Please check the sql map file.");
-    		    	break;
-    		    }
-    			Node node=root.node(i);
-    			if(node instanceof Element)
-    			{
-    		        sqlElement = (Element) node;
-    			}
-    			else {
-					continue;
+		// å…ˆä¿å­˜ä¸€ä¸‹å¼•ç”¨çš„ SQL
+		dealInclude(root);
+		// Elementç»“ç‚¹
+		Element sqlElement = null;
+		// å¾ªç¯æ§åˆ¶
+		int max_loop_count = 0;
+		// ä¿å­˜å¤„ç†è¿‡åçš„SQL
+		String real_sql;
+		// ä¿å­˜å¼€å‘ç¼–å†™çš„SQLæ³¨è§£
+		String commentString = "";
+		// æŒä¹…åŒ–åˆ°æ•°æ®åº“çš„å¯¹è±¡
+
+		for (int i = 0; i < root.nodeCount(); i++) {
+			// å¾ªç¯æ¬¡æ•°æ§åˆ¶,è¶…è¿‡100000æ¬¡,å¼ºåˆ¶é€€å‡ºå¾ªç¯
+			max_loop_count++;
+			if (max_loop_count > 100000) {
+				logger.error("the sql map file has more than 100000 sqls.Sql reveiw exit. Please check the sql map file.");
+				break;
+			}
+			Node node = root.node(i);
+			if (node instanceof Element) {
+				sqlElement = (Element) node;
+			} else {
+				continue;
+			}
+
+			// åªéœ€è¦å¤„ç†å››ç§SQL:select,update,delete,insert
+			if (sqlElement.getName().equals("select") || sqlElement.getName().equals("update") || sqlElement.getName().equals("delete")
+					|| sqlElement.getName().equals("insert")) {
+				real_sql = formatSql(getRealSQL(sqlElement));
+				// å¯¹SQLè¿›è¡Œé¢„å¤„ç†
+				real_sql = preDealSql(real_sql);
+				logger.info("java class id=" + sqlElement.attributeValue("id") + " sql=" + real_sql);
+				// å¤„ç†ä¸€ç§ç‰¹æ®Šå­—ç¬¦,å­—æ®µå€¼é‡Œå¯èƒ½å«æœ‰å•å¼•å·
+				real_sql = real_sql.replace("'", "''");
+				// å¤„ç†sql_xml
+				String sql_xml = sqlElement.asXML();
+				sql_xml = sql_xml.replace("'", "''");
+				// å¤„ç†SQL MAPä¸­çš„comment
+				if (root.node(i - 1) != null && root.node(i - 1) instanceof Comment) {
+					commentString = root.node(i - 1).asXML();
+					commentString = commentString.replace("'", "''");
 				}
-    			  	
-    		    //Ö»ĞèÒª´¦ÀíËÄÖÖSQL:select,update,delete,insert
-    		    if(sqlElement.getName().equals("select") || sqlElement.getName().equals("update") ||
-    		    	sqlElement.getName().equals("delete") || sqlElement.getName().equals("insert"))
-    		    {
-    		    	real_sql=formatSql(getRealSQL(sqlElement));
-    		    	//¶ÔSQL½øĞĞÔ¤´¦Àí
-    		    	real_sql=preDealSql(real_sql);
-    		    	logger.info("java class id="+sqlElement.attributeValue("id")+" sql="+real_sql);
-                    //´¦ÀíÒ»ÖÖÌØÊâ×Ö·û,×Ö¶ÎÖµÀï¿ÉÄÜº¬ÓĞµ¥ÒıºÅ
-                    real_sql=real_sql.replace("'", "''");
-                    //´¦Àísql_xml
-                    String sql_xml= sqlElement.asXML();
-                    sql_xml=sql_xml.replace("'", "''");
-                    //´¦ÀíSQL MAPÖĞµÄcomment
-                    if(root.node(i-1)!=null && root.node(i-1) instanceof Comment)
-                    {
-                    	commentString=root.node(i-1).asXML();
-                    	commentString=commentString.replace("'", "''");
-                    }
-                    //³Ö¾Ã»¯µ½Êı¾İ¿âÖĞ
-                    wsdb.insertDB(sqlmap_file_id,sqlElement.attributeValue("id"), sql_xml, real_sql,commentString);		
-    		    }
-    		    commentString="";  
-    		}
+				// æŒä¹…åŒ–åˆ°æ•°æ®åº“ä¸­
+				wsdb.insertDB(sqlmap_file_id, sqlElement.attributeValue("id"), sql_xml, real_sql, commentString);
+			}
+			commentString = "";
+		}
 	}
-	
+
 	/*
-	 * Ç°¶Ëµ÷ÓÃµÄ·½·¨
+	 * å‰ç«¯è°ƒç”¨çš„æ–¹æ³•
 	 */
-	public void xmlToSqlService() throws DocumentException, IOException 
-	{
-		    readSqlMap();
+	public void xmlToSqlService() throws DocumentException, IOException {
+		readSqlMap();
 	}
-	
+
 	/**
 	 * @param args
 	 * @throws DocumentException
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public static void main(String[] args) throws DocumentException, IOException 
-	{
-		
-		    XmlToSQL xts = new XmlToSQL();
-		    if(xts.wsdb.checkConnection()==false){
-		    	logger.error("ÎŞ·¨Á¬½ÓÉÏsqlreviewdb,Çë¼ì²éÅäÖÃÎÄ¼ş.");
-		    	return;
-		    }
-		    logger.info("SQLMAP FILE½âÎöÎÄ¼ş¿ªÊ¼");
-		    xts.readSqlMap();
-		    logger.info("SQLMAP FILE½âÎöÎÄ¼ş½áÊø");
+	public static void main(String[] args) throws DocumentException, IOException {
+
+		XmlToSQL xts = new XmlToSQL();
+		if (xts.wsdb.checkConnection() == false) {
+			logger.error("æ— æ³•è¿æ¥ä¸Šsqlreviewdb,è¯·æ£€æŸ¥é…ç½®æ–‡ä»¶.");
+			return;
+		}
+		logger.info("SQLMAP FILEè§£ææ–‡ä»¶å¼€å§‹");
+		xts.readSqlMap();
+		logger.info("SQLMAP FILEè§£ææ–‡ä»¶ç»“æŸ");
 	}
 }

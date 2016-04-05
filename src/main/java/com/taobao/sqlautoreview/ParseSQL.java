@@ -20,1309 +20,1149 @@ import java.util.regex.*;
 
 import org.apache.log4j.Logger;
 
-
-
 /*
- * function:Ö»´¦Àíµ¥±íµÄparse
+ * function:åªå¤„ç†å•è¡¨çš„parse
  */
 
 public class ParseSQL {
-	 //log4jÈÕÖ¾
-    private static Logger logger = Logger.getLogger(ParseSQL.class);
-	
-	//Ô­Ê¼µÄSQLÓï¾ä
+	// log4jæ—¥å¿—
+	private static Logger logger = Logger.getLogger(ParseSQL.class);
+
+	// åŸå§‹çš„SQLè¯­å¥
 	public String sql;
-	//SQLÀàĞÍ insert 0,update 1,delete 2,ÆÕÍ¨ select 3
+	// SQLç±»å‹ insert 0,update 1,delete 2,æ™®é€š select 3
 	public int sql_type;
-	//´íÎóĞÅÏ¢,¶à¸ö´íÎóĞÅÏ¢,ÒÔ:·Ö¸ô
+	// é”™è¯¯ä¿¡æ¯,å¤šä¸ªé”™è¯¯ä¿¡æ¯,ä»¥:åˆ†éš”
 	public String errmsg;
-	//½¨Òé
-    public String tip;
-	//±íÃû
+	// å»ºè®®
+	public String tip;
+	// è¡¨å
 	public String tablename;
-	//±í±ğÃû
+	// è¡¨åˆ«å
 	public String alias_tablename;
-	//whereÌõ¼ş¸ù½áµã
+	// whereæ¡ä»¶æ ¹ç»“ç‚¹
 	public Tree_Node whereNode;
-	//²éÑ¯×Ö¶Î
-    public String select_column;
-    //²éÑ¯±ğÃûÓë×Ö¶ÎÃûµÄ¶ÔÓ¦µÄhash map
-    public Map<String, String> map_columns;
-    //group by×Ö¶Î
-    public String groupbycolumn;
-    //ÅÅĞò×Ö¶Î
-    public String orderbycolumn;
-    //Muti-table sql statement tag
-    public int tag;
-	
-	//¹¹Ôìº¯Êı
-	public ParseSQL(String sql)
-	{
-		this.sql=sql.trim().toLowerCase();
-		this.errmsg="";
-		this.tip="";
-		this.tablename="";
-		this.groupbycolumn="";
-		this.orderbycolumn="";
-		//Ä¬ÈÏÇé¿öÏÂ¶¼ÊÇµ¥±í²éÑ¯0:µ¥±í;1:¶à±í
-		this.tag=0;
-		this.map_columns=new HashMap<String, String>();
+	// æŸ¥è¯¢å­—æ®µ
+	public String select_column;
+	// æŸ¥è¯¢åˆ«åä¸å­—æ®µåçš„å¯¹åº”çš„hash map
+	public Map<String, String> map_columns;
+	// group byå­—æ®µ
+	public String groupbycolumn;
+	// æ’åºå­—æ®µ
+	public String orderbycolumn;
+	// Muti-table sql statement tag
+	public int tag;
+
+	// æ„é€ å‡½æ•°
+	public ParseSQL(String sql) {
+		this.sql = sql.trim().toLowerCase();
+		this.errmsg = "";
+		this.tip = "";
+		this.tablename = "";
+		this.groupbycolumn = "";
+		this.orderbycolumn = "";
+		// é»˜è®¤æƒ…å†µä¸‹éƒ½æ˜¯å•è¡¨æŸ¥è¯¢0:å•è¡¨;1:å¤šè¡¨
+		this.tag = 0;
+		this.map_columns = new HashMap<String, String>();
 	}
-	
-	//·ÖÎöÒ»¸öSQLµÄÀàĞÍselect,insert,update,delete
-	public void sql_dispatch()
-	{
-		
-		if(sql.substring(0, 6).equals("select")==true)
-		{
-			//´¦Àíselect
+
+	// åˆ†æä¸€ä¸ªSQLçš„ç±»å‹select,insert,update,delete
+	public void sql_dispatch() {
+
+		if (sql.substring(0, 6).equals("select") == true) {
+			// å¤„ç†select
 			parseSQLSelect();
-			sql_type=3;
-		}
-		else if(sql.substring(0, 6).equals("insert")==true)
-		{
-		    //´¦Àíinsert
+			sql_type = 3;
+		} else if (sql.substring(0, 6).equals("insert") == true) {
+			// å¤„ç†insert
 			parseSQLInsert();
-			sql_type=0;
-		}
-		else if(sql.substring(0,6).equals("update")==true)
-		{
-			//´¦Àíupdate
+			sql_type = 0;
+		} else if (sql.substring(0, 6).equals("update") == true) {
+			// å¤„ç†update
 			parseSQLUpdate();
-			sql_type=1;
-		}
-		else if(sql.substring(0, 6).equals("delete")==true)
-		{
-			//´¦Àídelete
+			sql_type = 1;
+		} else if (sql.substring(0, 6).equals("delete") == true) {
+			// å¤„ç†delete
 			parseSQLDelete();
-			sql_type=2;
-		}
-		else
-			//·ÇÕı³£SQLÓï¾ä
-			sql_type=-1;
+			sql_type = 2;
+		} else
+			// éæ­£å¸¸SQLè¯­å¥
+			sql_type = -1;
 	}
 
 	/*
-	 * whereÌõ¼şÉú³ÉµÄÊ÷µÄ¸ù½áµã,²»ÄÜÊÇor
-	 * Èç¹ûÈ·Êµ´æÔÚÕâÑùµÄÇé¿ö,ĞèÒªDBA½éÈë
+	 * whereæ¡ä»¶ç”Ÿæˆçš„æ ‘çš„æ ¹ç»“ç‚¹,ä¸èƒ½æ˜¯or å¦‚æœç¡®å®å­˜åœ¨è¿™æ ·çš„æƒ…å†µ,éœ€è¦DBAä»‹å…¥
 	 */
-	private void checkWhereTreeRootNode(Tree_Node treeRootNode)
-	{
-		if(treeRootNode==null)
-		{
-			this.errmsg="where tree root node is empty.";
+	private void checkWhereTreeRootNode(Tree_Node treeRootNode) {
+		if (treeRootNode == null) {
+			this.errmsg = "where tree root node is empty.";
 			logger.warn(this.errmsg);
 			return;
 		}
-		
-		if(treeRootNode.node_content.equals("or")==true)
-		{
-			this.errmsg="where tree root node appears or key word,this is not allowed.";
+
+		if (treeRootNode.node_content.equals("or") == true) {
+			this.errmsg = "where tree root node appears or key word,this is not allowed.";
 			logger.error(this.errmsg);
 		}
 	}
-	
+
 	private void parseSQLDelete() {
 		// TODO Auto-generated method stub
-		// deleteÓï¾ä¶ÔÓÚSQL auto review,Ö»ĞèÒª·ÖÎöwhereÌõ¼ş×Ö¶Î¼´¿É
-		logger.info("SQL at parsing:"+this.sql);
-		int i=0;
-		int loop=0;
-		//µÚÒ»´ÎÒÆ¶¯ÏÂ±ê
-		if(i+6<sql.length() && sql.substring(0, 6).equals("delete")==true) 
-			i=i+6;
-		else
-		{
-			this.errmsg="not delete SQL statement.";
+		// deleteè¯­å¥å¯¹äºSQL auto review,åªéœ€è¦åˆ†æwhereæ¡ä»¶å­—æ®µå³å¯
+		logger.info("SQL at parsing:" + this.sql);
+		int i = 0;
+		int loop = 0;
+		// ç¬¬ä¸€æ¬¡ç§»åŠ¨ä¸‹æ ‡
+		if (i + 6 < sql.length() && sql.substring(0, 6).equals("delete") == true)
+			i = i + 6;
+		else {
+			this.errmsg = "not delete SQL statement.";
 			return;
 		}
-		
-		//µÚ¶ş´ÎÒÆ¶¯ÏÂ±ê,´¦Àí¿Õ¸ñ
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+
+		// ç¬¬äºŒæ¬¡ç§»åŠ¨ä¸‹æ ‡,å¤„ç†ç©ºæ ¼
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		
-		//µÚÈı´ÎÒÆ¶¯ÏÂ±ê,¼ì²âfrom
-		if(i+4<sql.length() && sql.substring(i, i+4).equals("from")==true)
-			i=i+4;
-		else
-		{
-			this.errmsg="not find from key word.";
+
+		// ç¬¬ä¸‰æ¬¡ç§»åŠ¨ä¸‹æ ‡,æ£€æµ‹from
+		if (i + 4 < sql.length() && sql.substring(i, i + 4).equals("from") == true)
+			i = i + 4;
+		else {
+			this.errmsg = "not find from key word.";
 			return;
 		}
-		
-		//µÚËÄ´ÎÒÆ¶¯ÏÂ±ê,´¦Àí¿Õ¸ñ
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+
+		// ç¬¬å››æ¬¡ç§»åŠ¨ä¸‹æ ‡,å¤„ç†ç©ºæ ¼
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		
-		//µÚÎå´ÎÒÆ¶¯ÏÂ±ê,¼ì²âtablename
-		while(i+1<sql.length() && sql.substring(i, i+1).equals(" ")==false)
-		{
-			tablename=tablename+sql.substring(i, i+1);
+
+		// ç¬¬äº”æ¬¡ç§»åŠ¨ä¸‹æ ‡,æ£€æµ‹tablename
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == false) {
+			tablename = tablename + sql.substring(i, i + 1);
 			i++;
 		}
-		
-		logger.info("table name:"+this.tablename);
-		
-		//µÚÁù´ÎÒÆ¶¯ÏÂ±ê,´¦Àí¿Õ¸ñ
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+
+		logger.info("table name:" + this.tablename);
+
+		// ç¬¬å…­æ¬¡ç§»åŠ¨ä¸‹æ ‡,å¤„ç†ç©ºæ ¼
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		
-		//µÚÆß´ÎÒÆ¶¯ÏÂ±ê,¼ì²âwhere×Ö¶Î
-		if(i+5<=sql.length() && sql.substring(i, i+5).equals("where")==true)
-			i=i+5;
-		else
-		{
-			this.errmsg="not find where key word.";
+
+		// ç¬¬ä¸ƒæ¬¡ç§»åŠ¨ä¸‹æ ‡,æ£€æµ‹whereå­—æ®µ
+		if (i + 5 <= sql.length() && sql.substring(i, i + 5).equals("where") == true)
+			i = i + 5;
+		else {
+			this.errmsg = "not find where key word.";
 			return;
 		}
-		
-		//Òì³£´¦Àí
-		if(i>sql.length()) {
-			this.errmsg="not find where condition.";
+
+		// å¼‚å¸¸å¤„ç†
+		if (i > sql.length()) {
+			this.errmsg = "not find where condition.";
 			logger.warn(this.errmsg);
 			return;
-		}
-		else
-		{
-			if(sql.substring(i).trim().length()==0)
-			{
-				this.errmsg="not find where condition.";
+		} else {
+			if (sql.substring(i).trim().length() == 0) {
+				this.errmsg = "not find where condition.";
 				logger.warn(this.errmsg);
 				return;
 			}
 		}
-		
-		//´¦ÀíºóÃæµÄÌõ¼ş×Ö¶Î
-		whereNode = parseWhere(null,sql.substring(i).trim(),loop);
-		
-		//check whereNode tree
+
+		// å¤„ç†åé¢çš„æ¡ä»¶å­—æ®µ
+		whereNode = parseWhere(null, sql.substring(i).trim(), loop);
+
+		// check whereNode tree
 		checkWhereTreeRootNode(whereNode);
-		
-		logger.info("where condition:"+sql.substring(i));
+
+		logger.info("where condition:" + sql.substring(i));
 	}
 
 	private void parseSQLUpdate() {
 		// TODO Auto-generated method stub
-		// updateÓï¾ä¶ÔÓÚSQL auto review,Ö»ĞèÒª·ÖÎö³ötablename,ÒÔ¼°whereÌõ¼ş×Ö¶Î¼´¿É
-		// updateÓï¾ä¿ÉÄÜ´æÔÚÓëselectÇ¶Ì×µÄÇé¿ö
-		logger.info("SQL at parsing:"+this.sql);
-		int addr_where=0;
-		int loop=0;
-		tablename="";
-		int i=0;
-		
-		//µÚÒ»´ÎÒÆ¶¯ÏÂ±ê
-		if(i+6<sql.length() && sql.substring(0, 6).equals("update")==true) 
-			i=i+6;
-		else
-		{
-			this.errmsg="not update SQL statement.";
+		// updateè¯­å¥å¯¹äºSQL auto review,åªéœ€è¦åˆ†æå‡ºtablename,ä»¥åŠwhereæ¡ä»¶å­—æ®µå³å¯
+		// updateè¯­å¥å¯èƒ½å­˜åœ¨ä¸selectåµŒå¥—çš„æƒ…å†µ
+		logger.info("SQL at parsing:" + this.sql);
+		int addr_where = 0;
+		int loop = 0;
+		tablename = "";
+		int i = 0;
+
+		// ç¬¬ä¸€æ¬¡ç§»åŠ¨ä¸‹æ ‡
+		if (i + 6 < sql.length() && sql.substring(0, 6).equals("update") == true)
+			i = i + 6;
+		else {
+			this.errmsg = "not update SQL statement.";
 			return;
 		}
-		
-		//µÚ¶ş´ÎÒÆ¶¯ÏÂ±ê,´¦Àí¿Õ¸ñ
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+
+		// ç¬¬äºŒæ¬¡ç§»åŠ¨ä¸‹æ ‡,å¤„ç†ç©ºæ ¼
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		
-		//µÚÈı´ÎÒÆ¶¯ÏÂ±ê,¼ì²âtablename
-		while(i+1<sql.length() && sql.substring(i, i+1).equals(" ")==false)
-		{
-			tablename=tablename+sql.substring(i, i+1);
+
+		// ç¬¬ä¸‰æ¬¡ç§»åŠ¨ä¸‹æ ‡,æ£€æµ‹tablename
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == false) {
+			tablename = tablename + sql.substring(i, i + 1);
 			i++;
 		}
-		
-		logger.info("table name:"+this.tablename);
-		
-		//check where key word
-		addr_where=sql.indexOf(" where");
-		if(addr_where<0)
-		{
-			this.errmsg="not find where key word.";
+
+		logger.info("table name:" + this.tablename);
+
+		// check where key word
+		addr_where = sql.indexOf(" where");
+		if (addr_where < 0) {
+			this.errmsg = "not find where key word.";
 			logger.warn(this.errmsg);
 			return;
 		}
-		
-		//¼ì²éÒ»ÏÂÔÚvaluesÖĞÊÇ·ñÓĞÓÃsysdate()º¯Êı,Õâ¸öº¯Êı»áÔì³ÉÖ÷±¸²»Ò»ÖÂ
-		if(sql.indexOf("sysdate()",i)>0 && sql.indexOf("sysdate()",i)<addr_where){
-			errmsg="use sysdate() function,this not allowed,you should use now() replace it.";
+
+		// æ£€æŸ¥ä¸€ä¸‹åœ¨valuesä¸­æ˜¯å¦æœ‰ç”¨sysdate()å‡½æ•°,è¿™ä¸ªå‡½æ•°ä¼šé€ æˆä¸»å¤‡ä¸ä¸€è‡´
+		if (sql.indexOf("sysdate()", i) > 0 && sql.indexOf("sysdate()", i) < addr_where) {
+			errmsg = "use sysdate() function,this not allowed,you should use now() replace it.";
 			logger.warn(errmsg);
 			return;
 		}
-		
-		if(addr_where+6>=sql.length())
-		{
-			this.errmsg="not find where condition.";
+
+		if (addr_where + 6 >= sql.length()) {
+			this.errmsg = "not find where condition.";
 			logger.warn(this.errmsg);
 			return;
 		}
-		whereNode=parseWhere(null, sql.substring(addr_where+6), loop);
-		
-		//check whereNode tree
+		whereNode = parseWhere(null, sql.substring(addr_where + 6), loop);
+
+		// check whereNode tree
 		checkWhereTreeRootNode(whereNode);
-		
-		logger.info("where condition:"+sql.substring(addr_where+5));
+
+		logger.info("where condition:" + sql.substring(addr_where + 5));
 	}
 
 	/*
-	 * ¼ì²é²éÑ¯×Ö¶ÎÊÇ·ñ·ûºÏ¹æÔò
+	 * æ£€æŸ¥æŸ¥è¯¢å­—æ®µæ˜¯å¦ç¬¦åˆè§„åˆ™
 	 */
-	private void selectColumnCheckValid(String columnsString) 
-	{
-		if(columnsString.equals("*")==true)
-			tip="³öÏÖÁËselect *,ÕâÊÇ²»³«µ¼µÄ,ÇëĞ´³öÃ÷È·µÄcolumn name.";
+	private void selectColumnCheckValid(String columnsString) {
+		if (columnsString.equals("*") == true) tip = "å‡ºç°äº†select *,è¿™æ˜¯ä¸å€¡å¯¼çš„,è¯·å†™å‡ºæ˜ç¡®çš„column name.";
 	}
-	
+
 	/*
-	 * È¡µÃÏÂÒ»¸öµ¥´Ê,Óöµ½µ¥´ÊºóµÄ¿Õ¸ñºóÍ£Ö¹
+	 * å–å¾—ä¸‹ä¸€ä¸ªå•è¯,é‡åˆ°å•è¯åçš„ç©ºæ ¼ååœæ­¢
 	 */
-    public String getNextToken(String str,int from_addr)
-    {
-    	String token="";
-    	//²ÎÊı°²È«¼ì²é
-    	if(str==null || str.length()<from_addr){
-    		return null;
-    	}
-    	//¿Õ¸ñ
-    	while(from_addr<str.length() && str.substring(from_addr, from_addr+1).equals(" "))
-    	{
-    		from_addr++;
-    	}
-    	//¼ì²éÍË³öÌõ¼ş
-    	if(from_addr>str.length()){
-    		return null;
-    	}
-    	//token
-    	while(from_addr<str.length() && str.substring(from_addr, from_addr+1).equals(" ")==false)
-    	{
-    		token=token+str.substring(from_addr, from_addr+1);
-    		from_addr++;
-    	}
-    	
-    	return token;
-    }
+	public String getNextToken(String str, int from_addr) {
+		String token = "";
+		// å‚æ•°å®‰å…¨æ£€æŸ¥
+		if (str == null || str.length() < from_addr) {
+			return null;
+		}
+		// ç©ºæ ¼
+		while (from_addr < str.length() && str.substring(from_addr, from_addr + 1).equals(" ")) {
+			from_addr++;
+		}
+		// æ£€æŸ¥é€€å‡ºæ¡ä»¶
+		if (from_addr > str.length()) {
+			return null;
+		}
+		// token
+		while (from_addr < str.length() && str.substring(from_addr, from_addr + 1).equals(" ") == false) {
+			token = token + str.substring(from_addr, from_addr + 1);
+			from_addr++;
+		}
+
+		return token;
+	}
+
 	/*
-	 * ¶Ô¸÷ÖÖµ±Ç°Ö§³ÖµÄselect SQLÓï¾äÆğµ½Ò»¸ö·Ö·¢×÷ÓÃ
+	 * å¯¹å„ç§å½“å‰æ”¯æŒçš„select SQLè¯­å¥èµ·åˆ°ä¸€ä¸ªåˆ†å‘ä½œç”¨
 	 */
-	private void parseSQLSelect()
-	{
-		//where word check
-		if(sql.indexOf(" where ")<0){
-			this.errmsg="sql ²»º¬ÓĞwhere¹Ø¼ü×Ö,ĞèÒªDBA½éÈë";
+	private void parseSQLSelect() {
+		// where word check
+		if (sql.indexOf(" where ") < 0) {
+			this.errmsg = "sql ä¸å«æœ‰whereå…³é”®å­—,éœ€è¦DBAä»‹å…¥";
 			return;
 		}
-		//and word check
-		if(getNextToken(sql, sql.indexOf(" where ")+7).equals("and"))
-		{
-			this.errmsg="whereÌõ¼şµÚÒ»¸ö³öÏÖÁËand¹Ø¼ü´Ê,Çë¼ì²ésqlmapfile";
+		// and word check
+		if (getNextToken(sql, sql.indexOf(" where ") + 7).equals("and")) {
+			this.errmsg = "whereæ¡ä»¶ç¬¬ä¸€ä¸ªå‡ºç°äº†andå…³é”®è¯,è¯·æ£€æŸ¥sqlmapfile";
 			return;
 		}
-		//&gt; &lt;ÕâÊÇSQLMAPÖĞ³£¼ûµÄÒ»ÖÖ´íÎó
-		if(sql.indexOf("&gt;")>0 || sql.indexOf("&lt;")>0){
-			this.errmsg="in sql-map file,sql whereÓï¾äÖĞµÄ>,<·ûºÅĞèÒªÓÃ<![CDATA[]]>×ª»¯";
+		// &gt; &lt;è¿™æ˜¯SQLMAPä¸­å¸¸è§çš„ä¸€ç§é”™è¯¯
+		if (sql.indexOf("&gt;") > 0 || sql.indexOf("&lt;") > 0) {
+			this.errmsg = "in sql-map file,sql whereè¯­å¥ä¸­çš„>,<ç¬¦å·éœ€è¦ç”¨<![CDATA[]]>è½¬åŒ–";
 			return;
 		}
-		
-		//join¹ØÁª·½Ê½Ôİ²»Ö§³Ö
-		if(sql.indexOf(" join ")>0 && sql.indexOf(" on ")>0)
-		{
-			this.errmsg="join or left join or right join is not supported now.";
+
+		// joinå…³è”æ–¹å¼æš‚ä¸æ”¯æŒ
+		if (sql.indexOf(" join ") > 0 && sql.indexOf(" on ") > 0) {
+			this.errmsg = "join or left join or right join is not supported now.";
 			return;
 		}
-		
-		//×î¼òµ¥µÄSQLÓï¾ä
-		if(sql.indexOf(".") < 0)
-		{
-			//²»ÄÜº¬ÓĞin×Ó²éÑ¯,ÕâÖÖ»áÓĞ¶à¸öselect³öÏÖ
-			if(sql.indexOf("select ", 7)>0)
-			{
-				this.errmsg="sub-query is not supported now.";
+
+		// æœ€ç®€å•çš„SQLè¯­å¥
+		if (sql.indexOf(".") < 0) {
+			// ä¸èƒ½å«æœ‰inå­æŸ¥è¯¢,è¿™ç§ä¼šæœ‰å¤šä¸ªselectå‡ºç°
+			if (sql.indexOf("select ", 7) > 0) {
+				this.errmsg = "sub-query is not supported now.";
 				return;
 			}
 			parseSQLSelectBase();
 			return;
 		}
-		
-		//·ÖÒ³Óï¾äµÄÌØÕ÷
-		if(sql.indexOf("order by") > 0 && sql.indexOf("limit ") > 0)
-		{
-			//ÔÙ¼ì²élimit #start#,#end#Óï·¨
-			int addr=sql.indexOf("limit ");
-			addr=addr+6;
-			if(sql.indexOf(",", addr) > sql.indexOf("limit "))
-			{
+
+		// åˆ†é¡µè¯­å¥çš„ç‰¹å¾
+		if (sql.indexOf("order by") > 0 && sql.indexOf("limit ") > 0) {
+			// å†æ£€æŸ¥limit #start#,#end#è¯­æ³•
+			int addr = sql.indexOf("limit ");
+			addr = addr + 6;
+			if (sql.indexOf(",", addr) > sql.indexOf("limit ")) {
 				parseSQLSelectPage();
 				return;
 			}
 		}
-		
-		//Ê¹ÓÃÁË.,²¢ÇÒ´æÔÚ¶à¸öselect,ÏÖÔÚÒ²²»Ö§³Ö
-		if(sql.indexOf("select ", 7)>0)
-		{
-			this.errmsg="´ËÖÖÀàĞÍµÄ¶à¸öselectµÄ²éÑ¯Ôİ²»Ö§³Ö .";
+
+		// ä½¿ç”¨äº†.,å¹¶ä¸”å­˜åœ¨å¤šä¸ªselect,ç°åœ¨ä¹Ÿä¸æ”¯æŒ
+		if (sql.indexOf("select ", 7) > 0) {
+			this.errmsg = "æ­¤ç§ç±»å‹çš„å¤šä¸ªselectçš„æŸ¥è¯¢æš‚ä¸æ”¯æŒ .";
 			return;
 		}
-		
-		//¿´¿´ÊÇ²»ÊÇµ¥±í²éÑ¯Ê¹ÓÃÁË±ğÃû
-		int is_mutiple_table=checkMutipleTable(sql);
-		//µ¥±íÊ¹ÓÃÁË±ğÃû
-		if(is_mutiple_table==1){
+
+		// çœ‹çœ‹æ˜¯ä¸æ˜¯å•è¡¨æŸ¥è¯¢ä½¿ç”¨äº†åˆ«å
+		int is_mutiple_table = checkMutipleTable(sql);
+		// å•è¡¨ä½¿ç”¨äº†åˆ«å
+		if (is_mutiple_table == 1) {
 			parseSQLSelectBase();
 			return;
 		}
-		//¶à±í¹ØÁª
-		if(is_mutiple_table==2){
-			this.tag=1;
+		// å¤šè¡¨å…³è”
+		if (is_mutiple_table == 2) {
+			this.tag = 1;
 			return;
 		}
-		
-		this.errmsg="µ±Ç°SQLĞÎÊ½,»¹²»Ö§³Ö";
+
+		this.errmsg = "å½“å‰SQLå½¢å¼,è¿˜ä¸æ”¯æŒ";
 		return;
 	}
-	
-	//µ¥±í²éÑ¯ÊÇ·ñÊ¹ÓÃÁË±ğÃû
-	//Ö÷Òª¿´from¹Ø¼ü×ÖºóÃæ
-	//from tablename t where
-	//·µ»ØÖµ-1ÓĞ´íÎó
-	//·µ»ØÖµ0,µ¥±íÎ´Ê¹ÓÃ±ğÃû
-	//·µ»ØÖµ1,µ¥±íÊ¹ÓÃ±ğÃû
-	//·µ»ØÖµ2,¶à±í
+
+	// å•è¡¨æŸ¥è¯¢æ˜¯å¦ä½¿ç”¨äº†åˆ«å
+	// ä¸»è¦çœ‹fromå…³é”®å­—åé¢
+	// from tablename t where
+	// è¿”å›å€¼-1æœ‰é”™è¯¯
+	// è¿”å›å€¼0,å•è¡¨æœªä½¿ç”¨åˆ«å
+	// è¿”å›å€¼1,å•è¡¨ä½¿ç”¨åˆ«å
+	// è¿”å›å€¼2,å¤šè¡¨
 	private int checkMutipleTable(String sql) {
 		// TODO Auto-generated method stub
 		int addr;
-		int length=sql.length();
+		int length = sql.length();
 		int i;
 		int start;
-		boolean is_find_as=false;
-		String alias_name="";
-		addr=sql.indexOf(" from ");
-		if(addr<0) return -1;
-		i=addr+6;
-		//space
-		while(i+1<length && sql.substring(i, i+1).equals(" ")==true)
+		boolean is_find_as = false;
+		String alias_name = "";
+		addr = sql.indexOf(" from ");
+		if (addr < 0) return -1;
+		i = addr + 6;
+		// space
+		while (i + 1 < length && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		//table name
-		while(i+1<length && sql.substring(i, i+1).equals(" ")==false)
+		// table name
+		while (i + 1 < length && sql.substring(i, i + 1).equals(" ") == false)
 			i++;
-		//space
-		while(i+1<length && sql.substring(i, i+1).equals(" ")==true)
+		// space
+		while (i + 1 < length && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		//¼ì²éÓĞÃ»ÓĞtablename as t1ÕâÖÖÌØÊâÓï·¨
-		if(i+3<sql.length() && sql.substring(i, i+3).equals("as ")==true){
-			i=i+3;
-			is_find_as=true;
+		// æ£€æŸ¥æœ‰æ²¡æœ‰tablename as t1è¿™ç§ç‰¹æ®Šè¯­æ³•
+		if (i + 3 < sql.length() && sql.substring(i, i + 3).equals("as ") == true) {
+			i = i + 3;
+			is_find_as = true;
 		}
-		//token=where?
-		start=i;
-		while(i+1<length 
-				&& sql.substring(i, i+1).equals(" ")==false
-				&& sql.substring(i,i+1).equals(",")==false)
+		// token=where?
+		start = i;
+		while (i + 1 < length && sql.substring(i, i + 1).equals(" ") == false && sql.substring(i, i + 1).equals(",") == false)
 			i++;
-		alias_name=sql.substring(start, i).trim();
-		if(alias_name.equals("where")==true){
+		alias_name = sql.substring(start, i).trim();
+		if (alias_name.equals("where") == true) {
 			return 0;
-		}
-		else 
-		{
-			//ÅĞ¶ÏµÚÒ»¸ö·Ç¿Õ×Ö·ûÊÇ·ñÎª,ºÅ
-			while(i+1<length && sql.substring(i, i+1).equals(" ")==true)
+		} else {
+			// åˆ¤æ–­ç¬¬ä¸€ä¸ªéç©ºå­—ç¬¦æ˜¯å¦ä¸º,å·
+			while (i + 1 < length && sql.substring(i, i + 1).equals(" ") == true)
 				i++;
-			if(sql.substring(i, i+1).equals(",")==true)
-			{
+			if (sql.substring(i, i + 1).equals(",") == true) {
 				logger.info("mutiple tables,this is not support now.");
 				return 2;
 			}
-			//µ¥±íÊ¹ÓÃÁË±ğÃû,ÔòĞèÒª½øĞĞÌæ»»
-			logger.info("alias name:"+alias_name);
-			this.sql=this.sql.replace(" "+alias_name+" ", " ");
-			alias_name=alias_name+".";
-			this.sql=this.sql.replace(alias_name, "");
-			if(is_find_as==true){
-				this.sql=this.sql.replace(" as ", " ");
+			// å•è¡¨ä½¿ç”¨äº†åˆ«å,åˆ™éœ€è¦è¿›è¡Œæ›¿æ¢
+			logger.info("alias name:" + alias_name);
+			this.sql = this.sql.replace(" " + alias_name + " ", " ");
+			alias_name = alias_name + ".";
+			this.sql = this.sql.replace(alias_name, "");
+			if (is_find_as == true) {
+				this.sql = this.sql.replace(" as ", " ");
 			}
-			
+
 			return 1;
 		}
-		
+
 	}
 
 	/*
-	 * select column_name,[column_name] from table_name where Ìõ¼ş order by column_name limit #endnum
-	 * ´¦Àí×î¼òµ¥µÄselect SQL²éÑ¯
+	 * select column_name,[column_name] from table_name where æ¡ä»¶ order by
+	 * column_name limit #endnum å¤„ç†æœ€ç®€å•çš„select SQLæŸ¥è¯¢
 	 */
 	private void parseSQLSelectBase() {
 		// TODO Auto-generated method stub
-		int i=0,tmp=0;
+		int i = 0, tmp = 0;
 		int addr_from;
 		int addr_where;
 		int addr_group_by;
 		int addr_order_by;
 		int addr_limit;
-		String wherestr="";
-		int loop=0;
-		
-		logger.info("SQL at parsing:"+sql);
-		
-		// ¼ì²éselect¹Ø¼ü×Ö
-		if(i+6<sql.length() && sql.substring(0, 6).equals("select")==true)
-		{
-			i=i+6;
-		}
-		else
-		{
-			this.errmsg="not select SQL statement.";
+		String wherestr = "";
+		int loop = 0;
+
+		logger.info("SQL at parsing:" + sql);
+
+		// æ£€æŸ¥selectå…³é”®å­—
+		if (i + 6 < sql.length() && sql.substring(0, 6).equals("select") == true) {
+			i = i + 6;
+		} else {
+			this.errmsg = "not select SQL statement.";
 			return;
 		}
-		
-		//´¦Àí²éÑ¯×Ö¶Î£¬²¢¼ì²éºÏ·¨ĞÔ
-		addr_from=sql.indexOf(" from ");
-		if(addr_from==-1)
-		{
-			this.errmsg="not find from key word.";
+
+		// å¤„ç†æŸ¥è¯¢å­—æ®µï¼Œå¹¶æ£€æŸ¥åˆæ³•æ€§
+		addr_from = sql.indexOf(" from ");
+		if (addr_from == -1) {
+			this.errmsg = "not find from key word.";
 			return;
 		}
-		this.select_column=sql.substring(i, addr_from).trim();
+		this.select_column = sql.substring(i, addr_from).trim();
 		selectColumnCheckValid(this.select_column);
-		//´¦ÀíÁĞÃûµÄ±ğÃûÓ³Éä
-		addToColumnHashMap(this.select_column,this.map_columns);
-		
-		logger.info("select columns:"+this.select_column);
-		
-		//´¦Àítable name
-		i=addr_from+6;
-		addr_where=sql.indexOf(" where ", i);
-		if(addr_where==-1)
-		{
-			this.errmsg="Select SQLÓï¾äÖĞ±ØĞë°üº¬where¹Ø¼ü×Ö,Èç¹ûÕâÌõSQLÈ·ÊµĞèÒª,ĞèÒªDBA½éÈëÉóºË";
+		// å¤„ç†åˆ—åçš„åˆ«åæ˜ å°„
+		addToColumnHashMap(this.select_column, this.map_columns);
+
+		logger.info("select columns:" + this.select_column);
+
+		// å¤„ç†table name
+		i = addr_from + 6;
+		addr_where = sql.indexOf(" where ", i);
+		if (addr_where == -1) {
+			this.errmsg = "Select SQLè¯­å¥ä¸­å¿…é¡»åŒ…å«whereå…³é”®å­—,å¦‚æœè¿™æ¡SQLç¡®å®éœ€è¦,éœ€è¦DBAä»‹å…¥å®¡æ ¸";
 			return;
 		}
-		
-		this.tablename=sql.substring(i, addr_where);
-		
-		logger.info("table name:"+this.tablename);
-		
-		//´¦ÀíwhereÌõ¼ş
-		i=addr_where+7;
+
+		this.tablename = sql.substring(i, addr_where);
+
+		logger.info("table name:" + this.tablename);
+
+		// å¤„ç†whereæ¡ä»¶
+		i = addr_where + 7;
 		addr_group_by = sql.indexOf("group by");
 		addr_order_by = sql.indexOf("order by");
 		addr_limit = sql.indexOf("limit ");
-		
-		if(addr_group_by<0 && addr_order_by<0 && addr_limit<0)
-		{
+
+		if (addr_group_by < 0 && addr_order_by < 0 && addr_limit < 0) {
 			wherestr = sql.substring(i);
-		}
-		else {
-			for(tmp=i;tmp<sql.length()-8;tmp++)
-			{
-				if(sql.substring(tmp, tmp+8).equals("group by")== false 
-						&& sql.substring(tmp,tmp+8).equals("order by")==false 
-						&& sql.substring(tmp, tmp+6).equals("limit ")==false)
-				wherestr=wherestr+sql.substring(tmp, tmp+1);
+		} else {
+			for (tmp = i; tmp < sql.length() - 8; tmp++) {
+				if (sql.substring(tmp, tmp + 8).equals("group by") == false && sql.substring(tmp, tmp + 8).equals("order by") == false
+						&& sql.substring(tmp, tmp + 6).equals("limit ") == false)
+					wherestr = wherestr + sql.substring(tmp, tmp + 1);
 				else {
 					break;
 				}
 			}
 		}
-		//´¦Àíwhere string
-		int wherestr_len=wherestr.length();
-		wherestr=handleBetweenAnd(wherestr);
-		this.whereNode=this.parseWhere(null,wherestr,loop);
-		
-		//check whereNode tree
+		// å¤„ç†where string
+		int wherestr_len = wherestr.length();
+		wherestr = handleBetweenAnd(wherestr);
+		this.whereNode = this.parseWhere(null, wherestr, loop);
+
+		// check whereNode tree
 		checkWhereTreeRootNode(whereNode);
-		
-		logger.info("where condition:"+wherestr);
-		
-		//¼ÌĞø´¦ÀíÅÅĞò,Ö»ÄÜ¼ÓÉÏhandleBetweenAndº¯Êı´¦ÀíÖ®Ç°µÄwherestrµÄ³¤¶È
-		i=i+wherestr_len;
-		if(i<sql.length())
-		{
-			if(sql.substring(i, i+8).equals("group by")==true)
-			{
-				//½âÎöºóÃæµÄÅÅĞò×Ö¶Î,Ò²°üÀ¨order byµÄ×Ö¶Î,Åöµ½Óï¾ä½áÊø
-				//ÓĞgroup byµÄÊ±ºò,ºóÃæÍ¨³£ÓĞhaving¹Ø¼ü×Ö
-				if(sql.indexOf("having", i+8) > 0)
-				{
-					this.groupbycolumn=sql.substring(i+8, sql.indexOf("having", i+7)).trim();
-				}
-				else if(sql.indexOf("order by", i+8)>0)
-				{
-					this.groupbycolumn=sql.substring(i+8, sql.indexOf("order by", i+8)).trim();
-					
-				}
-				else if(sql.indexOf("limit",i+8)>0){
-					this.groupbycolumn=sql.substring(i+8, sql.indexOf("limit", i+8)).trim();
+
+		logger.info("where condition:" + wherestr);
+
+		// ç»§ç»­å¤„ç†æ’åº,åªèƒ½åŠ ä¸ŠhandleBetweenAndå‡½æ•°å¤„ç†ä¹‹å‰çš„wherestrçš„é•¿åº¦
+		i = i + wherestr_len;
+		if (i < sql.length()) {
+			if (sql.substring(i, i + 8).equals("group by") == true) {
+				// è§£æåé¢çš„æ’åºå­—æ®µ,ä¹ŸåŒ…æ‹¬order byçš„å­—æ®µ,ç¢°åˆ°è¯­å¥ç»“æŸ
+				// æœ‰group byçš„æ—¶å€™,åé¢é€šå¸¸æœ‰havingå…³é”®å­—
+				if (sql.indexOf("having", i + 8) > 0) {
+					this.groupbycolumn = sql.substring(i + 8, sql.indexOf("having", i + 7)).trim();
+				} else if (sql.indexOf("order by", i + 8) > 0) {
+					this.groupbycolumn = sql.substring(i + 8, sql.indexOf("order by", i + 8)).trim();
+
+				} else if (sql.indexOf("limit", i + 8) > 0) {
+					this.groupbycolumn = sql.substring(i + 8, sql.indexOf("limit", i + 8)).trim();
 				}
 			}
-		    
-			logger.info("group by columns:"+this.groupbycolumn);
-			
-			if(sql.indexOf("order by",i) >= i)
-			{
-				if(sql.indexOf("limit ",i) > sql.indexOf("order by",i))
-				{
-					//º¬ÓĞlimit,½âÎöºóÃæµÄÅÅĞò×Ö¶Î,Óöµ½limitÖÕÖ¹
-					if(this.orderbycolumn.length()>0)
-						this.orderbycolumn=this.orderbycolumn+","+sql.substring(sql.indexOf("order by")+8, sql.indexOf("limit"));
+
+			logger.info("group by columns:" + this.groupbycolumn);
+
+			if (sql.indexOf("order by", i) >= i) {
+				if (sql.indexOf("limit ", i) > sql.indexOf("order by", i)) {
+					// å«æœ‰limit,è§£æåé¢çš„æ’åºå­—æ®µ,é‡åˆ°limitç»ˆæ­¢
+					if (this.orderbycolumn.length() > 0)
+						this.orderbycolumn = this.orderbycolumn + ","
+								+ sql.substring(sql.indexOf("order by") + 8, sql.indexOf("limit"));
 					else {
-						this.orderbycolumn=sql.substring(sql.indexOf("order by",i)+8, sql.indexOf("limit "));
-					}	
-				}
-				else {
-					//²»º¬ÓĞlimit,ÔòÖ±½Óµ½Ä©Î²
-					if(this.orderbycolumn.length()>0)
-						this.orderbycolumn=this.orderbycolumn+","+sql.substring(sql.indexOf("order by",i)+8);
+						this.orderbycolumn = sql.substring(sql.indexOf("order by", i) + 8, sql.indexOf("limit "));
+					}
+				} else {
+					// ä¸å«æœ‰limit,åˆ™ç›´æ¥åˆ°æœ«å°¾
+					if (this.orderbycolumn.length() > 0)
+						this.orderbycolumn = this.orderbycolumn + "," + sql.substring(sql.indexOf("order by", i) + 8);
 					else {
-						this.orderbycolumn=sql.substring(sql.indexOf("order by",i)+8);
+						this.orderbycolumn = sql.substring(sql.indexOf("order by", i) + 8);
 					}
 				}
-				
-				this.orderbycolumn=this.orderbycolumn.replace(" asc", " ");
-				this.orderbycolumn=this.orderbycolumn.replace(" desc", " ");
+
+				this.orderbycolumn = this.orderbycolumn.replace(" asc", " ");
+				this.orderbycolumn = this.orderbycolumn.replace(" desc", " ");
 			}
-			
-			this.orderbycolumn=this.orderbycolumn.replace(" ", "");
-			logger.info("order by columns:"+this.orderbycolumn);
+
+			this.orderbycolumn = this.orderbycolumn.replace(" ", "");
+			logger.info("order by columns:" + this.orderbycolumn);
 		}
 	}
 
 	/*
-	 * ´¦ÀíÁĞÃûµÄ±ğÃûÓ³Éä
-	 * column as alias_column,column as alias_column
-	 * or
-	 * function(column) as alias_column
-	 * Ê¾Àı:
-	 * SELECT CONCAT(last_name,', ',first_name) AS full_name FROM mytable ORDER BY full_name;
-	 * ÔÚÎªselect_expr¸ø¶¨±ğÃûÊ±£¬AS¹Ø¼ü´ÊÊÇ×ÔÑ¡µÄ¡£Ç°ÃæµÄÀı×Ó¿ÉÒÔÕâÑù±àĞ´£º
-     * SELECT CONCAT(last_name,', ',first_name) full_name FROM mytable ORDER BY full_name;
+	 * å¤„ç†åˆ—åçš„åˆ«åæ˜ å°„ column as alias_column,column as alias_column or
+	 * function(column) as alias_column ç¤ºä¾‹: SELECT CONCAT(last_name,',
+	 * ',first_name) AS full_name FROM mytable ORDER BY full_name;
+	 * åœ¨ä¸ºselect_exprç»™å®šåˆ«åæ—¶ï¼ŒASå…³é”®è¯æ˜¯è‡ªé€‰çš„ã€‚å‰é¢çš„ä¾‹å­å¯ä»¥è¿™æ ·ç¼–å†™ï¼š SELECT CONCAT(last_name,',
+	 * ',first_name) full_name FROM mytable ORDER BY full_name;
 	 */
-	public static void addToColumnHashMap(String select_exprs,
-			Map<String, String> map) 
-	{
-		//²ÎÊıÅĞ¶Ï
-		if(select_exprs==null){
+	public static void addToColumnHashMap(String select_exprs, Map<String, String> map) {
+		// å‚æ•°åˆ¤æ–­
+		if (select_exprs == null) {
 			return;
 		}
-		select_exprs=select_exprs.toLowerCase();
-		logger.debug("addToColumnHashMap select_exprs:"+select_exprs);
-		//ÏÈ´¦Àí×î¼òµ¥µÄÇé¿ö
-		if(select_exprs.indexOf("(")<0)
-		{
-			String[] array_columns=select_exprs.split(",");
-			for(int i=0;i<array_columns.length;i++)
-			{
-				dealSingleSelectExpr(array_columns[i],map);
+		select_exprs = select_exprs.toLowerCase();
+		logger.debug("addToColumnHashMap select_exprs:" + select_exprs);
+		// å…ˆå¤„ç†æœ€ç®€å•çš„æƒ…å†µ
+		if (select_exprs.indexOf("(") < 0) {
+			String[] array_columns = select_exprs.split(",");
+			for (int i = 0; i < array_columns.length; i++) {
+				dealSingleSelectExpr(array_columns[i], map);
 			}
 			return;
 		}
-		
-		//Ê¹ÓÃÁËº¯Êı,´¦ÀíÓĞÀ¨ºÅµÄÇé¿ö,À¨ºÅ
-		int i=0;
-		int start=0;
-		int addr_douhao=0;
+
+		// ä½¿ç”¨äº†å‡½æ•°,å¤„ç†æœ‰æ‹¬å·çš„æƒ…å†µ,æ‹¬å·
+		int i = 0;
+		int start = 0;
+		int addr_douhao = 0;
 		int douhao_before_left_kuohao;
 		int douhao_before_right_kuohao;
 		String select_expr;
-		while(i<select_exprs.length())
-		{
-			addr_douhao=select_exprs.indexOf(",",i);
-			if(addr_douhao<0){
-				//×îºóÒ»×éselect_expr
-				select_expr=select_exprs.substring(start);
-		    	dealSingleSelectExpr(select_expr, map);
+		while (i < select_exprs.length()) {
+			addr_douhao = select_exprs.indexOf(",", i);
+			if (addr_douhao < 0) {
+				// æœ€åä¸€ç»„select_expr
+				select_expr = select_exprs.substring(start);
+				dealSingleSelectExpr(select_expr, map);
 				break;
 			}
-			//¼ì²éÕâ¸ö¶ººÅÊÇ·ñÊÇÕıÈ·µÄ¶ººÅ,¶ø²»ÊÇº¯ÊıÀïËùÊ¹ÓÃµÄ¶ººÅ
-			douhao_before_left_kuohao=getWordCountInStr(select_exprs,"(",addr_douhao);
-			douhao_before_right_kuohao=getWordCountInStr(select_exprs,")",addr_douhao);
-		    if(douhao_before_left_kuohao==douhao_before_right_kuohao){
-		    	//ÕâÊÇÒ»¸öÍêÕûµÄselect_expr
-		    	select_expr=select_exprs.substring(start, addr_douhao);
-		    	dealSingleSelectExpr(select_expr, map);
-		    	start=addr_douhao+1;
-		    	i=start;
-		    }else {
-				//ÕâÊÇº¯ÊıÀïÃæµÄ,Ñ°ÕÒÏÂÒ»¸ö¶ººÅ
-		    	i=addr_douhao+1;
+			// æ£€æŸ¥è¿™ä¸ªé€—å·æ˜¯å¦æ˜¯æ­£ç¡®çš„é€—å·,è€Œä¸æ˜¯å‡½æ•°é‡Œæ‰€ä½¿ç”¨çš„é€—å·
+			douhao_before_left_kuohao = getWordCountInStr(select_exprs, "(", addr_douhao);
+			douhao_before_right_kuohao = getWordCountInStr(select_exprs, ")", addr_douhao);
+			if (douhao_before_left_kuohao == douhao_before_right_kuohao) {
+				// è¿™æ˜¯ä¸€ä¸ªå®Œæ•´çš„select_expr
+				select_expr = select_exprs.substring(start, addr_douhao);
+				dealSingleSelectExpr(select_expr, map);
+				start = addr_douhao + 1;
+				i = start;
+			} else {
+				// è¿™æ˜¯å‡½æ•°é‡Œé¢çš„,å¯»æ‰¾ä¸‹ä¸€ä¸ªé€—å·
+				i = addr_douhao + 1;
 			}
 		}
 	}
-	
+
 	/*
-	 * Í³¼ÆÒ»¸ö·ûºÅ³öÏÖµÄ´ÎÊı
+	 * ç»Ÿè®¡ä¸€ä¸ªç¬¦å·å‡ºç°çš„æ¬¡æ•°
 	 */
-	private static int getWordCountInStr(String str,String symbol,int addr_douhao)
-	{
-		int count=0;
-		if(str==null || symbol==null ||str.length()<=addr_douhao){
+	private static int getWordCountInStr(String str, String symbol, int addr_douhao) {
+		int count = 0;
+		if (str == null || symbol == null || str.length() <= addr_douhao) {
 			return -1;
 		}
-		for(int i=0;i<addr_douhao;i++)
-		{
-			if(str.substring(i, i+1).equals(symbol)){
+		for (int i = 0; i < addr_douhao; i++) {
+			if (str.substring(i, i + 1).equals(symbol)) {
 				count++;
 			}
 		}
-	
+
 		return count;
-	}
-	
-	/*
-	 * ´¦Àíµ¥¸öµÄselect_expr
-	 * column as alias_column
-	 * or
-	 * function(column) as alias_column
-	 */
-	private static void dealSingleSelectExpr(String select_expr,Map<String, String> map)
-	{
-		String alias_column_name="";
-		String column_name="";
-		String word="";
-		
-		
-		if(select_expr==null || select_expr.trim().equals("")){
-			return;
-		}
-		
-		logger.debug("dealSingleSelectExpr select_expr:"+select_expr);
-		
-		int k=select_expr.length();
-		//»ñµÃ±ğÃû
-		while(k-1>=0 && !select_expr.substring(k-1, k).equals(" "))
-		{
-			alias_column_name=select_expr.substring(k-1, k)+alias_column_name;
-			k--;
-		}
-		if(k==0){
-			//ÁĞÃû²»º¬ÓĞ±ğÃû
-			column_name=alias_column_name;
-			map.put(alias_column_name, column_name);
-			logger.debug("column_name:"+column_name+" alias_column_name:"+alias_column_name);
-			return;
-		}
-		//´¦Àí¿Õ¸ñ
-		while(k-1>=0 && select_expr.substring(k-1, k).equals(" "))
-		{
-			k--;
-		}
-		//´¦Àías,»òÕßÁĞÕæÃû»òÕßº¯ÊıÃû
-		while(k-1>=0 && !select_expr.substring(k-1, k).equals(" "))
-		{
-			word=select_expr.substring(k-1, k)+word;
-			k--;
-		}
-		
-		if(!word.equals("as"))
-		{
-			column_name=word;
-			logger.debug("column_name:"+column_name+" alias_column_name:"+alias_column_name);
-			map.put(alias_column_name,column_name);
-			return;
-		}
-		
-		//´¦Àí¿Õ¸ñ
-		while(k-1>=0 && select_expr.substring(k-1, k).equals(" "))
-		{
-			k--;
-		}
-		
-		//ÁĞÕæÃû»òÕßº¯ÊıÃû
-		column_name=select_expr.substring(0, k);
-		logger.debug("column_name:"+column_name+" alias_column_name:"+alias_column_name);
-		map.put(alias_column_name,column_name);	
 	}
 
 	/*
-	 * ´¦ÀíwhereÓï¾äÖĞµÄbetween and Óï·¨
-	 * 
+	 * å¤„ç†å•ä¸ªçš„select_expr column as alias_column or function(column) as
+	 * alias_column
 	 */
-	public String handleBetweenAnd(String wherestr) 
-	{
-		String tmp_wherestr=wherestr;
-		String resultString="";
-		String column_name;
-		int start=0;
-		String matchString;
-		int addr,len;
-		
-		if(tmp_wherestr.indexOf(" between ") < 0)
-		{
-			resultString = tmp_wherestr;
+	private static void dealSingleSelectExpr(String select_expr, Map<String, String> map) {
+		String alias_column_name = "";
+		String column_name = "";
+		String word = "";
+
+		if (select_expr == null || select_expr.trim().equals("")) {
+			return;
 		}
-		else 
-		{
-			//°Ñbetween #value# andÖĞ¼ä#value#ÖĞµÄ¿Õ¸ñÒªÈ¥µô
-			tmp_wherestr=removeSpace(tmp_wherestr);
+
+		logger.debug("dealSingleSelectExpr select_expr:" + select_expr);
+
+		int k = select_expr.length();
+		// è·å¾—åˆ«å
+		while (k - 1 >= 0 && !select_expr.substring(k - 1, k).equals(" ")) {
+			alias_column_name = select_expr.substring(k - 1, k) + alias_column_name;
+			k--;
+		}
+		if (k == 0) {
+			// åˆ—åä¸å«æœ‰åˆ«å
+			column_name = alias_column_name;
+			map.put(alias_column_name, column_name);
+			logger.debug("column_name:" + column_name + " alias_column_name:" + alias_column_name);
+			return;
+		}
+		// å¤„ç†ç©ºæ ¼
+		while (k - 1 >= 0 && select_expr.substring(k - 1, k).equals(" ")) {
+			k--;
+		}
+		// å¤„ç†as,æˆ–è€…åˆ—çœŸåæˆ–è€…å‡½æ•°å
+		while (k - 1 >= 0 && !select_expr.substring(k - 1, k).equals(" ")) {
+			word = select_expr.substring(k - 1, k) + word;
+			k--;
+		}
+
+		if (!word.equals("as")) {
+			column_name = word;
+			logger.debug("column_name:" + column_name + " alias_column_name:" + alias_column_name);
+			map.put(alias_column_name, column_name);
+			return;
+		}
+
+		// å¤„ç†ç©ºæ ¼
+		while (k - 1 >= 0 && select_expr.substring(k - 1, k).equals(" ")) {
+			k--;
+		}
+
+		// åˆ—çœŸåæˆ–è€…å‡½æ•°å
+		column_name = select_expr.substring(0, k);
+		logger.debug("column_name:" + column_name + " alias_column_name:" + alias_column_name);
+		map.put(alias_column_name, column_name);
+	}
+
+	/*
+	 * å¤„ç†whereè¯­å¥ä¸­çš„between and è¯­æ³•
+	 */
+	public String handleBetweenAnd(String wherestr) {
+		String tmp_wherestr = wherestr;
+		String resultString = "";
+		String column_name;
+		int start = 0;
+		String matchString;
+		int addr, len;
+
+		if (tmp_wherestr.indexOf(" between ") < 0) {
+			resultString = tmp_wherestr;
+		} else {
+			// æŠŠbetween #value# andä¸­é—´#value#ä¸­çš„ç©ºæ ¼è¦å»æ‰
+			tmp_wherestr = removeSpace(tmp_wherestr);
 			Pattern pattern = Pattern.compile("\\s+[a-zA-Z][0-9_a-zA-Z\\.]+\\s+between\\s+[',:#+\\-0-9_a-zA-Z\\(\\)]+\\sand\\s+");
 			Matcher matcher = pattern.matcher(tmp_wherestr);
-			while(matcher.find())
-			{
-				matchString=matcher.group();
-				len=matchString.length();
-				addr=tmp_wherestr.indexOf(matchString);
+			while (matcher.find()) {
+				matchString = matcher.group();
+				len = matchString.length();
+				addr = tmp_wherestr.indexOf(matchString);
 				column_name = matchString.trim().substring(0, matchString.trim().indexOf(" "));
-				//°ÑbetweenÌæ»»³É>=·ûºÅ
-				matchString=matchString.replace(" between ", " >= ");
-				//ÔÚandºóÃæµÄ¿Õ¸ñ´¦²åÈë<=·ûºÅ
-				matchString=matchString+column_name+" <= ";
-				//¹¹Ôìµ±Ç°µÄresultString
-				resultString=resultString+tmp_wherestr.substring(start,addr)+matchString;
-				//¼ÆËãÏÂ´Î¿ªÊ¼µÄstartÎ»ÖÃ
-				start=addr+len;
-			}//end while
-			
-			//²¹È«ºóÃæµÄSQL
-			if(start < tmp_wherestr.length())
-			{
-				resultString=resultString+tmp_wherestr.substring(start);
+				// æŠŠbetweenæ›¿æ¢æˆ>=ç¬¦å·
+				matchString = matchString.replace(" between ", " >= ");
+				// åœ¨andåé¢çš„ç©ºæ ¼å¤„æ’å…¥<=ç¬¦å·
+				matchString = matchString + column_name + " <= ";
+				// æ„é€ å½“å‰çš„resultString
+				resultString = resultString + tmp_wherestr.substring(start, addr) + matchString;
+				// è®¡ç®—ä¸‹æ¬¡å¼€å§‹çš„startä½ç½®
+				start = addr + len;
+			} // end while
+
+			// è¡¥å…¨åé¢çš„SQL
+			if (start < tmp_wherestr.length()) {
+				resultString = resultString + tmp_wherestr.substring(start);
 			}
-			
+
 		}
-		
+
 		return resultString;
 	}
 
-	
 	/*
-	 * °Ñbetween #value# andÖĞ¼ä#value#ÖĞµÄ¿Õ¸ñÒªÈ¥µô,ÒÔ#´úÌæ
+	 * æŠŠbetween #value# andä¸­é—´#value#ä¸­çš„ç©ºæ ¼è¦å»æ‰,ä»¥#ä»£æ›¿
 	 */
 	public String removeSpace(String tmp_wherestr) {
-		String tmpString="";
-		int addr_between=tmp_wherestr.indexOf(" between ");
+		String tmpString = "";
+		int addr_between = tmp_wherestr.indexOf(" between ");
 		int addr_and;
-		int start=0;
-		while(addr_between > -1)
-		{
+		int start = 0;
+		while (addr_between > -1) {
 			addr_and = tmp_wherestr.indexOf(" and ", addr_between);
-			tmpString=tmpString+tmp_wherestr.substring(start, addr_between)+" between "+tmp_wherestr.substring(addr_between+9, addr_and).trim().replaceAll(" ", "#")+" and ";
-			addr_between=tmp_wherestr.indexOf(" between ",addr_and+5);
-			start= addr_and+5;
+			tmpString = tmpString + tmp_wherestr.substring(start, addr_between) + " between "
+					+ tmp_wherestr.substring(addr_between + 9, addr_and).trim().replaceAll(" ", "#") + " and ";
+			addr_between = tmp_wherestr.indexOf(" between ", addr_and + 5);
+			start = addr_and + 5;
 		}
-		if(start<tmp_wherestr.length())
-		{
-			tmpString=tmpString+tmp_wherestr.substring(start);
+		if (start < tmp_wherestr.length()) {
+			tmpString = tmpString + tmp_wherestr.substring(start);
 		}
-		return tmpString;	
+		return tmpString;
 	}
 
 	/*
-	 * ÌÔ±¦mysqlµ¥±í·ÖÒ³µÄ¹æ·¶
-	 * °´ÕÕ·ÖÒ³µÄ¹æÔòÀ´Æ¥Åä,´¦Àíµ¥±í·ÖÒ³µÄ½âÎö
-	 * Ê¾Àı1
-	 * root@test 09:44:03>explain select t1.id, t1.manager_nick, t1.gmt_create, t1.nick
-		-> from (select id
-		-> from test
-		-> where manager = ''
-		-> and is_open = 2
-		-> order by gmt_create limit 1, 10) t2 straight_join test t1
-		-> where t1.id=t2.id
-	 * Ê¾Àı2
-	 * root@test 09:45:28>explain select t1.id, t1.manager_nick, t1.gmt_create, t1.nick
-		-> from (select id
-		-> from test
-		-> where manager = ''
-		-> and is_open = 2
-		-> order by gmt_create limit 1, 10) t2 ,test t1 force index(primary)
-		-> where t1.id=t2.id;
+	 * æ·˜å®mysqlå•è¡¨åˆ†é¡µçš„è§„èŒƒ æŒ‰ç…§åˆ†é¡µçš„è§„åˆ™æ¥åŒ¹é…,å¤„ç†å•è¡¨åˆ†é¡µçš„è§£æ ç¤ºä¾‹1 root@test 09:44:03>explain select
+	 * t1.id, t1.manager_nick, t1.gmt_create, t1.nick -> from (select id -> from
+	 * test -> where manager = '' -> and is_open = 2 -> order by gmt_create
+	 * limit 1, 10) t2 straight_join test t1 -> where t1.id=t2.id ç¤ºä¾‹2 root@test
+	 * 09:45:28>explain select t1.id, t1.manager_nick, t1.gmt_create, t1.nick ->
+	 * from (select id -> from test -> where manager = '' -> and is_open = 2 ->
+	 * order by gmt_create limit 1, 10) t2 ,test t1 force index(primary) ->
+	 * where t1.id=t2.id;
 	 */
-	private void parseSQLSelectPage()
-	{
-		logger.info("SQL at parsing:"+this.sql);
-		int i=0;
+	private void parseSQLSelectPage() {
+		logger.info("SQL at parsing:" + this.sql);
+		int i = 0;
 		int addr_from;
 		String subsqlString;
 		String alias_left_table;
 		String alias_right_table;
 		String real_tablename;
-		if(i+6<sql.length() && sql.substring(0, 6).equals("select")==true)
-		{
-			i=i+6;
-		}
-		else
-		{
-			this.errmsg="not select SQL statement.";
+		if (i + 6 < sql.length() && sql.substring(0, 6).equals("select") == true) {
+			i = i + 6;
+		} else {
+			this.errmsg = "not select SQL statement.";
 			return;
 		}
-		addr_from=sql.indexOf(" from ");
-		if(addr_from==-1)
-		{
-			this.errmsg="not find from key word.";
+		addr_from = sql.indexOf(" from ");
+		if (addr_from == -1) {
+			this.errmsg = "not find from key word.";
 			return;
 		}
-		this.select_column=sql.substring(i, addr_from).trim();
+		this.select_column = sql.substring(i, addr_from).trim();
 		selectColumnCheckValid(this.select_column);
-		if(this.errmsg.length()>0) return;
-		
-		i=addr_from+6;
-		//´¦ÀífromºóÃæµÄÀ¨ºÅÄÚËùÓĞÄÚÈİ,À¨ºÅÄÚÄÚÈİ±ØĞë·ûºÏÈçÏÂµÄ¸ñÊ½
-		//select primary key from table name where Ìõ¼ş order by column_name asc/desc limit #1,#2
-		//ÓÃstackÀ´»ñÈ¡Õâ¸ösub SQL²éÑ¯
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+		if (this.errmsg.length() > 0) return;
+
+		i = addr_from + 6;
+		// å¤„ç†fromåé¢çš„æ‹¬å·å†…æ‰€æœ‰å†…å®¹,æ‹¬å·å†…å†…å®¹å¿…é¡»ç¬¦åˆå¦‚ä¸‹çš„æ ¼å¼
+		// select primary key from table name where æ¡ä»¶ order by column_name
+		// asc/desc limit #1,#2
+		// ç”¨stackæ¥è·å–è¿™ä¸ªsub SQLæŸ¥è¯¢
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		//±ØĞëÕÒµ½×óÀ¨ºÅ
-		if(i+1<sql.length() && sql.substring(i, i+1).equals("(")==false)
-		{
-			this.errmsg="Ã»ÓĞÕÒµ½·ÖÒ³Óï¾äµÄ×óÀ¨ºÅ";
+		// å¿…é¡»æ‰¾åˆ°å·¦æ‹¬å·
+		if (i + 1 < sql.length() && sql.substring(i, i + 1).equals("(") == false) {
+			this.errmsg = "æ²¡æœ‰æ‰¾åˆ°åˆ†é¡µè¯­å¥çš„å·¦æ‹¬å·";
 			return;
 		}
-		int start=i;
+		int start = i;
 		Stack<String> stack = new Stack<String>();
 		String tmp_s;
-		while (i<sql.length()) {
-			tmp_s=sql.substring(i, i+1);
-			if(tmp_s.equals(")")==false)
-				//½«ËùÓĞÑ¹Õ»
-			    stack.push(tmp_s);
+		while (i < sql.length()) {
+			tmp_s = sql.substring(i, i + 1);
+			if (tmp_s.equals(")") == false)
+				// å°†æ‰€æœ‰å‹æ ˆ
+				stack.push(tmp_s);
 			else {
-				//³öÕ»,Ö±µ½Óöµ½×óÀ¨ºÅ
-				while(stack.pop().equals("(")==false)
-				{
+				// å‡ºæ ˆ,ç›´åˆ°é‡åˆ°å·¦æ‹¬å·
+				while (stack.pop().equals("(") == false) {
 					;
 				}
-				//ÅĞ¶ÏÕ»ÊÇ·ñÎª¿Õ,Îª¿Õ,ÔòÒÑÕÒµ½ÕıÈ·Î»ÖÃ	
-				if(stack.isEmpty()==true)
-					break;
+				// åˆ¤æ–­æ ˆæ˜¯å¦ä¸ºç©º,ä¸ºç©º,åˆ™å·²æ‰¾åˆ°æ­£ç¡®ä½ç½®
+				if (stack.isEmpty() == true) break;
 			}
-			
+
 			i++;
-		}//end while
-		subsqlString=sql.substring(start+1, i);
-		
-		
-		//´¦ÀíÇı¶¯±í±ğÃû
+		} // end while
+		subsqlString = sql.substring(start + 1, i);
+
+		// å¤„ç†é©±åŠ¨è¡¨åˆ«å
 		i++;
-		if(sql.indexOf(",", i) > 0)
-		{
-		    alias_left_table = sql.substring(i, sql.indexOf(",", i)).trim();
-		    //´¦Àí±íµÄÕæÃû
-		    i= sql.indexOf(",", i)+1;
-		    while(sql.substring(i,i+1).equals(" ")==true)
+		if (sql.indexOf(",", i) > 0) {
+			alias_left_table = sql.substring(i, sql.indexOf(",", i)).trim();
+			// å¤„ç†è¡¨çš„çœŸå
+			i = sql.indexOf(",", i) + 1;
+			while (sql.substring(i, i + 1).equals(" ") == true)
 				i++;
-		    real_tablename = sql.substring(i, sql.indexOf(" ", i));
-		    //´¦Àí±íµÄ±ğÃû
-		    i= sql.indexOf(" ", i);
-		    while(sql.substring(i,i+1).equals(" ")==true)
+			real_tablename = sql.substring(i, sql.indexOf(" ", i));
+			// å¤„ç†è¡¨çš„åˆ«å
+			i = sql.indexOf(" ", i);
+			while (sql.substring(i, i + 1).equals(" ") == true)
 				i++;
-		    alias_right_table = sql.substring(i, sql.indexOf(" ",i));
-		    //±ØĞëº¬ÓĞforce index(primary)¹Ø¼ü×Ö
-		    //step 1: force
-		    i=sql.indexOf(" ",i);
-		    while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+			alias_right_table = sql.substring(i, sql.indexOf(" ", i));
+			// å¿…é¡»å«æœ‰force index(primary)å…³é”®å­—
+			// step 1: force
+			i = sql.indexOf(" ", i);
+			while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 				i++;
-		   
-		    if(i+5<sql.length() && sql.substring(i, i+5).equals("force")==false)
-		    {
-		    	this.errmsg="not find force key word.";
-		    	return;
-		    }
-		    //step 2:index
-		    i=i+5;
-		    while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-				i++;
-		    if(i+5<sql.length() && sql.substring(i, i+5).equals("index")==false)
-		    {
-		    	this.errmsg="not find force index key word.";
-		    	return;
-		    }
-		    //step 3:(primary)
-		    i=i+5;
-		    while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-				i++;
-		    if(i+1<sql.length() && sql.substring(i, i+1).equals("(")==false)
-		    {
-		    	this.errmsg="not find force index( key word.";
-		    	return;
-		    }
-		    i++;
-		    while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-				i++;
-		    if(i+7<sql.length() && sql.substring(i, i+7).equals("primary")==false)
-		    {
-		    	this.errmsg="not find force index(primary key word.";
-		    	return;
-		    }
-		    i=i+7;
-		    while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-				i++;
-		    if(i+1<sql.length() && sql.substring(i, i+1).equals(")")==false)
-		    {
-		    	this.errmsg="not find force index(primary) key word.";
-		    	return;
-		    }
-		    i++;
-		}
-		else {
-			//´¦ÀíÁíÍâÒ»ÖÖÁ¬½Ó·½Ê½straight_join 
-			if(sql.indexOf("straight_join", i) > 0)
-			{
-				alias_left_table=sql.substring(i, sql.indexOf("straight_join ", i)).trim();
-				i=sql.indexOf("straight_join ", i)+14;
-				while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-						i++;
-				real_tablename = sql.substring(i, sql.indexOf(" ", i)).trim();
-			    //´¦Àí±íµÄ±ğÃû
-				i=sql.indexOf(" ", i);
-			    while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-					i++;
-			    alias_right_table = sql.substring(i, sql.indexOf(" ",i)).trim();
-			    i= sql.indexOf(" ",i);
+
+			if (i + 5 < sql.length() && sql.substring(i, i + 5).equals("force") == false) {
+				this.errmsg = "not find force key word.";
+				return;
 			}
-			else {
-				this.errmsg ="cann't recongnize table join method.";
+			// step 2:index
+			i = i + 5;
+			while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+				i++;
+			if (i + 5 < sql.length() && sql.substring(i, i + 5).equals("index") == false) {
+				this.errmsg = "not find force index key word.";
+				return;
+			}
+			// step 3:(primary)
+			i = i + 5;
+			while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+				i++;
+			if (i + 1 < sql.length() && sql.substring(i, i + 1).equals("(") == false) {
+				this.errmsg = "not find force index( key word.";
+				return;
+			}
+			i++;
+			while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+				i++;
+			if (i + 7 < sql.length() && sql.substring(i, i + 7).equals("primary") == false) {
+				this.errmsg = "not find force index(primary key word.";
+				return;
+			}
+			i = i + 7;
+			while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+				i++;
+			if (i + 1 < sql.length() && sql.substring(i, i + 1).equals(")") == false) {
+				this.errmsg = "not find force index(primary) key word.";
+				return;
+			}
+			i++;
+		} else {
+			// å¤„ç†å¦å¤–ä¸€ç§è¿æ¥æ–¹å¼straight_join
+			if (sql.indexOf("straight_join", i) > 0) {
+				alias_left_table = sql.substring(i, sql.indexOf("straight_join ", i)).trim();
+				i = sql.indexOf("straight_join ", i) + 14;
+				while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+					i++;
+				real_tablename = sql.substring(i, sql.indexOf(" ", i)).trim();
+				// å¤„ç†è¡¨çš„åˆ«å
+				i = sql.indexOf(" ", i);
+				while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+					i++;
+				alias_right_table = sql.substring(i, sql.indexOf(" ", i)).trim();
+				i = sql.indexOf(" ", i);
+			} else {
+				this.errmsg = "cann't recongnize table join method.";
 				return;
 			}
 		}
-		
-		//´¦Àíwhere
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
+
+		// å¤„ç†where
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
 			i++;
-		
-		if(i+6<sql.length() && sql.substring(i, i+6).equals("where ")==false)
-		{
-			this.errmsg="not find where key word.";
-	    	return;
-		}
-		//´¦Àí¹ØÁªÌõ¼ş
-		i=i+6;
-		while(i+1<sql.length() && sql.substring(i,i+1).equals(" ")==true)
-			i++;
-		if(sql.indexOf("=", i)==-1)
-		{
-			this.errmsg="¹ØÁªÌõ¼şÃ»ÓĞÊ¹ÓÃ=ºÅ";
+
+		if (i + 6 < sql.length() && sql.substring(i, i + 6).equals("where ") == false) {
+			this.errmsg = "not find where key word.";
 			return;
 		}
-		else {
+		// å¤„ç†å…³è”æ¡ä»¶
+		i = i + 6;
+		while (i + 1 < sql.length() && sql.substring(i, i + 1).equals(" ") == true)
+			i++;
+		if (sql.indexOf("=", i) == -1) {
+			this.errmsg = "å…³è”æ¡ä»¶æ²¡æœ‰ä½¿ç”¨=å·";
+			return;
+		} else {
 			ParseSQL ps = new ParseSQL(subsqlString);
 			ps.sql_dispatch();
-			if(ps.tablename.equals(real_tablename)==false)
-			{
-				this.errmsg="µ¥±í·ÖÒ³,ÀïÍâ±í±í²»Ò»ÖÂ";
+			if (ps.tablename.equals(real_tablename) == false) {
+				this.errmsg = "å•è¡¨åˆ†é¡µ,é‡Œå¤–è¡¨è¡¨ä¸ä¸€è‡´";
 				return;
 			}
-			String str1=alias_left_table+"."+ps.select_column;
-			String str2=alias_right_table+"."+ps.select_column;
-			if(sql.indexOf(str1,i)==-1)
-			{
-				this.errmsg=this.errmsg+":Ã»ÓĞÕÒµ½"+str1;
+			String str1 = alias_left_table + "." + ps.select_column;
+			String str2 = alias_right_table + "." + ps.select_column;
+			if (sql.indexOf(str1, i) == -1) {
+				this.errmsg = this.errmsg + ":æ²¡æœ‰æ‰¾åˆ°" + str1;
 				return;
 			}
-			
-			if(sql.indexOf(str2,i)==-1)
-			{
-				this.errmsg=this.errmsg+":Ã»ÓĞÕÒµ½"+str2;
+
+			if (sql.indexOf(str2, i) == -1) {
+				this.errmsg = this.errmsg + ":æ²¡æœ‰æ‰¾åˆ°" + str2;
 				return;
-			}	
-			
-			//Èç¹û³ÌĞò×ßµ½ÕâÀï,ËµÃ÷ÍêÈ«Æ¥Åä·ÖÒ³µÄ±ê×¼Ğ´·¨
-			this.tablename=ps.tablename;
-			this.whereNode=ps.whereNode;
-			this.orderbycolumn=ps.orderbycolumn;
+			}
+
+			// å¦‚æœç¨‹åºèµ°åˆ°è¿™é‡Œ,è¯´æ˜å®Œå…¨åŒ¹é…åˆ†é¡µçš„æ ‡å‡†å†™æ³•
+			this.tablename = ps.tablename;
+			this.whereNode = ps.whereNode;
+			this.orderbycolumn = ps.orderbycolumn;
 		}
-		
+
 	}
-	
-	private void parseSQLInsert() 
-	{
+
+	private void parseSQLInsert() {
 		// insert SQL
 		logger.info(sql);
-		int i=0;
+		int i = 0;
 		int addr_values;
-		// ¼ì²éinsert¹Ø¼ü×Ö
-		if(sql.substring(0, 6).equals("insert")==true)
-		{
-			i=i+6;
-		}
-		else
-		{
-			errmsg="·ÇinsertÓï¾ä";
+		// æ£€æŸ¥insertå…³é”®å­—
+		if (sql.substring(0, 6).equals("insert") == true) {
+			i = i + 6;
+		} else {
+			errmsg = "éinsertè¯­å¥";
 			return;
 		}
-		
-		//½ÓÏÂÀ´µÄ¹Ø¼ü×ÖÊÇinto
-		while(sql.substring(i, i+1).equals(" ")==true)
-		{
+
+		// æ¥ä¸‹æ¥çš„å…³é”®å­—æ˜¯into
+		while (sql.substring(i, i + 1).equals(" ") == true) {
 			i++;
 		}
-		if(sql.substring(i, i+4).equals("into")==false)
-		{
-			errmsg="insert sqlÓï¾äÈ±ÉÙinto¹Ø¼ü×Ö,³öÏÖÓï·¨´íÎó";
+		if (sql.substring(i, i + 4).equals("into") == false) {
+			errmsg = "insert sqlè¯­å¥ç¼ºå°‘intoå…³é”®å­—,å‡ºç°è¯­æ³•é”™è¯¯";
 			return;
+		} else {
+			i = i + 4;
 		}
-		else {
-			i=i+4;
-		}
-		
-		//½ÓÏÂÀ´´¦Àí±íÃû
-		while(sql.substring(i, i+1).equals(" ")==true)
-		{
+
+		// æ¥ä¸‹æ¥å¤„ç†è¡¨å
+		while (sql.substring(i, i + 1).equals(" ") == true) {
 			i++;
 		}
-		while(sql.substring(i, i+1).equals(" ")==false && sql.substring(i, i+1).equals("(")==false)
-		{
-			tablename=tablename+sql.substring(i, i+1);
+		while (sql.substring(i, i + 1).equals(" ") == false && sql.substring(i, i + 1).equals("(") == false) {
+			tablename = tablename + sql.substring(i, i + 1);
 			i++;
 		}
 		logger.info(tablename);
-		//(col1,col2)values(#col1#,#col2#)
-		addr_values=sql.indexOf("values",i);
-		if(addr_values<0){
-			errmsg="not find values key word.";
+		// (col1,col2)values(#col1#,#col2#)
+		addr_values = sql.indexOf("values", i);
+		if (addr_values < 0) {
+			errmsg = "not find values key word.";
 			logger.warn(errmsg);
 			return;
 		}
-		
-		//¼ì²éÓĞÃ»ÓĞĞ´ÁĞÃû,±ØĞëÒªÃ÷È·Ğ´Ã÷ÁĞÃû,²»ÄÜÎª¿Õ
-		int kuohao_left=sql.indexOf("(",i);
-		int kuohao_right=sql.indexOf(")",i);
-		if(kuohao_left>=i && kuohao_right > kuohao_left && kuohao_right < addr_values){
+
+		// æ£€æŸ¥æœ‰æ²¡æœ‰å†™åˆ—å,å¿…é¡»è¦æ˜ç¡®å†™æ˜åˆ—å,ä¸èƒ½ä¸ºç©º
+		int kuohao_left = sql.indexOf("(", i);
+		int kuohao_right = sql.indexOf(")", i);
+		if (kuohao_left >= i && kuohao_right > kuohao_left && kuohao_right < addr_values) {
 			;
-		}else {
-			errmsg="between tablename and values key word,you must write columns clearly.";
+		} else {
+			errmsg = "between tablename and values key word,you must write columns clearly.";
 			logger.warn(errmsg);
 			return;
 		}
-		
-		//¼ì²éÒ»ÏÂÔÚvaluesÖĞÊÇ·ñÓĞÓÃsysdate()º¯Êı,Õâ¸öº¯Êı»áÔì³ÉÖ÷±¸²»Ò»ÖÂ
-		if(sql.indexOf("sysdate()",addr_values)>0){
-			errmsg="use sysdate() function,this not allowed,you should use now() replace it.";
+
+		// æ£€æŸ¥ä¸€ä¸‹åœ¨valuesä¸­æ˜¯å¦æœ‰ç”¨sysdate()å‡½æ•°,è¿™ä¸ªå‡½æ•°ä¼šé€ æˆä¸»å¤‡ä¸ä¸€è‡´
+		if (sql.indexOf("sysdate()", addr_values) > 0) {
+			errmsg = "use sysdate() function,this not allowed,you should use now() replace it.";
 			logger.warn(errmsg);
 			return;
 		}
 	}
-	
+
 	/*
-	 * Õâ¸öº¯Êı°Ñ»ù±¾µÄ²Ù×÷,ÀıÈça=5 build³ÉÒ»¿ÃÊ÷
-	 * ±» parseBase()º¯Êıµ÷ÓÃ
+	 * è¿™ä¸ªå‡½æ•°æŠŠåŸºæœ¬çš„æ“ä½œ,ä¾‹å¦‚a=5 buildæˆä¸€æ£µæ ‘ è¢« parseBase()å‡½æ•°è°ƒç”¨
 	 */
-	private Tree_Node buildTree(Tree_Node rootnode,String str,int addr,int offset)
-	{
+	private Tree_Node buildTree(Tree_Node rootnode, String str, int addr, int offset) {
 		Tree_Node node = new Tree_Node();
 		Tree_Node left_child_node = new Tree_Node();
 		Tree_Node right_child_node = new Tree_Node();
-		
-		//ÌáÈ¡³öÔËËã·û
-		node.node_content=str.substring(addr, addr+offset).trim();
-		node.node_type=2;
-		node.parent_node=rootnode;
-		node.left_node=left_child_node;
-		node.right_node=right_child_node;
-		//×óº¢×Ó
-		left_child_node.node_content=str.substring(0, addr).trim();
-		left_child_node.node_type=1;
-		left_child_node.parent_node=node;
-		left_child_node.left_node=null;
-		left_child_node.right_node=null;
-		//ÓÒº¢×Ó
-		right_child_node.node_content=str.substring(addr+offset).trim();
-		right_child_node.node_type=3;
-		right_child_node.parent_node=node;
-		right_child_node.left_node=null;
-		right_child_node.right_node=null;
-		
+
+		// æå–å‡ºè¿ç®—ç¬¦
+		node.node_content = str.substring(addr, addr + offset).trim();
+		node.node_type = 2;
+		node.parent_node = rootnode;
+		node.left_node = left_child_node;
+		node.right_node = right_child_node;
+		// å·¦å­©å­
+		left_child_node.node_content = str.substring(0, addr).trim();
+		left_child_node.node_type = 1;
+		left_child_node.parent_node = node;
+		left_child_node.left_node = null;
+		left_child_node.right_node = null;
+		// å³å­©å­
+		right_child_node.node_content = str.substring(addr + offset).trim();
+		right_child_node.node_type = 3;
+		right_child_node.parent_node = node;
+		right_child_node.left_node = null;
+		right_child_node.right_node = null;
+
 		return node;
 	}
+
 	/*
-	 * ´¦Àí×î»ù±¾µÄÔËËã,ÀıÈça=5  »òÕß a>#abc#
+	 * å¤„ç†æœ€åŸºæœ¬çš„è¿ç®—,ä¾‹å¦‚a=5 æˆ–è€… a>#abc#
 	 */
-	private Tree_Node parseBase(Tree_Node rootnode,String str)
-	{
+	private Tree_Node parseBase(Tree_Node rootnode, String str) {
 		int addr;
-		
-		addr=str.indexOf(">=");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,2);
+
+		addr = str.indexOf(">=");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 2);
 		}
-		
-		addr=str.indexOf("<=");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,2);
+
+		addr = str.indexOf("<=");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 2);
 		}
-		
-		addr=str.indexOf(">");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,1);
+
+		addr = str.indexOf(">");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 1);
 		}
-		
-		addr=str.indexOf("<");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,1);
+
+		addr = str.indexOf("<");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 1);
 		}
-		
-		addr=str.indexOf("!=");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,2);
+
+		addr = str.indexOf("!=");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 2);
 		}
-		
-		addr=str.indexOf("=");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,1);
+
+		addr = str.indexOf("=");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 1);
 		}
-		
-		addr=str.indexOf(" in ");
-		if(addr > 0) 
-		{
-			//ÔËËã·ûÎªin,ĞèÒª´¦ÀíÀ¨ºÅ,Õâ²¿·İ´úÂëĞèÒªÍêÉÆ
-			//ÕâÀï¿ÉÄÜº¬ÓĞ×Ó²éÑ¯
-			return buildTree(rootnode,str,addr,4);
+
+		addr = str.indexOf(" in ");
+		if (addr > 0) {
+			// è¿ç®—ç¬¦ä¸ºin,éœ€è¦å¤„ç†æ‹¬å·,è¿™éƒ¨ä»½ä»£ç éœ€è¦å®Œå–„
+			// è¿™é‡Œå¯èƒ½å«æœ‰å­æŸ¥è¯¢
+			return buildTree(rootnode, str, addr, 4);
 		}
-		
-		addr=str.indexOf(" like ");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,6);
+
+		addr = str.indexOf(" like ");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 6);
 		}
-		
-		addr=str.indexOf(" is ");
-		if(addr > 0) 
-		{
-			return buildTree(rootnode,str,addr,4);
+
+		addr = str.indexOf(" is ");
+		if (addr > 0) {
+			return buildTree(rootnode, str, addr, 4);
 		}
-		
+
 		return null;
 	}
-	
-	public Tree_Node parseWhere(Tree_Node rootnode,String str_where,int loop)
-	{
-		//µİ¹éÉî¶È¿ØÖÆ
+
+	public Tree_Node parseWhere(Tree_Node rootnode, String str_where, int loop) {
+		// é€’å½’æ·±åº¦æ§åˆ¶
 		loop++;
-		if(loop>10000) return null;
-		
-		String str=str_where.trim();
-		Tree_Node node=new Tree_Node();
+		if (loop > 10000) return null;
+
+		String str = str_where.trim();
+		Tree_Node node = new Tree_Node();
 		int addr_and;
 		int addr_or;
-		//¼ì²éÊÇ·ñÓĞ×óÀ¨ºÅ³öÏÖ,½«¶ÔÀ¨ºÅÄÚµÄ±í´ïÊ½½øĞĞµİ¹é
-		if(str.substring(0, 1).equals("(")==true){
-			    //ĞèÕÒµ½¸úËü¶Ô³ÆµÄÓÒÀ¨ºÅµÄÎ»ÖÃ
-				//SQLÓï¾äÖĞº¬ÓĞin¹Ø¼ü×Ö¶Î,ĞèÒª´¦ÀíÀ¨ºÅ
-				Stack<String> stack = new Stack<String>();
-				int k=0;
-				String tmp_s;
-				while (k<str.length()) {
-					tmp_s=str.substring(k, k+1);
-					if(tmp_s.equals(")")==false)
-						//½«ËùÓĞÑ¹Õ»
-					    stack.push(tmp_s);
-					else {
-						//³öÕ»,Ö±µ½Óöµ½×óÀ¨ºÅ
-						while(stack.pop().equals("(")==false)
-						{
-							;
-						}
-						//ÅĞ¶ÏÕ»ÊÇ·ñÎª¿Õ,Îª¿Õ,ÔòÒÑÕÒµ½ÕıÈ·Î»ÖÃ	
-						if(stack.isEmpty()==true)
-							break;
-					}
-					
-					k++;
-				}//end while
-				
-				if(k==str.length()-1)
-				{
-					//ÔòÓÒ²àÎŞ±í´ïÊ½
-					return parseWhere(rootnode,str.substring(1,k),loop);
-				}
+		// æ£€æŸ¥æ˜¯å¦æœ‰å·¦æ‹¬å·å‡ºç°,å°†å¯¹æ‹¬å·å†…çš„è¡¨è¾¾å¼è¿›è¡Œé€’å½’
+		if (str.substring(0, 1).equals("(") == true) {
+			// éœ€æ‰¾åˆ°è·Ÿå®ƒå¯¹ç§°çš„å³æ‹¬å·çš„ä½ç½®
+			// SQLè¯­å¥ä¸­å«æœ‰inå…³é”®å­—æ®µ,éœ€è¦å¤„ç†æ‹¬å·
+			Stack<String> stack = new Stack<String>();
+			int k = 0;
+			String tmp_s;
+			while (k < str.length()) {
+				tmp_s = str.substring(k, k + 1);
+				if (tmp_s.equals(")") == false)
+					// å°†æ‰€æœ‰å‹æ ˆ
+					stack.push(tmp_s);
 				else {
-					//ÓÒ²àÓĞ±í´ïÊ½,²¢ÕÒµ½µÚÒ»¸öand »òÕß or,ÖÁÉÙÓĞÒ»¸ö
-					if(str.substring(k+1, k+6).equals(" and ")==true)
-					{
-						node.node_content="and";
-						node.node_type=4;
-						node.left_node=parseWhere(node, str.substring(1,k), loop);
-						node.right_node=parseWhere(node, str.substring(k+6), loop);
-						node.parent_node=rootnode;
+					// å‡ºæ ˆ,ç›´åˆ°é‡åˆ°å·¦æ‹¬å·
+					while (stack.pop().equals("(") == false) {
+						;
 					}
-					else if(str.substring(k+1, k+5).equals(" or ")==true)
-					{
-						node.node_content="or";
-						node.node_type=4;
-						node.left_node=parseWhere(node, str.substring(1,k), loop);
-						node.right_node=parseWhere(node, str.substring(k+5), loop);
-						node.parent_node=rootnode;
-					}
-					
-					return node;
-				    
+					// åˆ¤æ–­æ ˆæ˜¯å¦ä¸ºç©º,ä¸ºç©º,åˆ™å·²æ‰¾åˆ°æ­£ç¡®ä½ç½®
+					if (stack.isEmpty() == true) break;
 				}
-		}
-		else 
-		{
+
+				k++;
+			} // end while
+
+			if (k == str.length() - 1) {
+				// åˆ™å³ä¾§æ— è¡¨è¾¾å¼
+				return parseWhere(rootnode, str.substring(1, k), loop);
+			} else {
+				// å³ä¾§æœ‰è¡¨è¾¾å¼,å¹¶æ‰¾åˆ°ç¬¬ä¸€ä¸ªand æˆ–è€… or,è‡³å°‘æœ‰ä¸€ä¸ª
+				if (str.substring(k + 1, k + 6).equals(" and ") == true) {
+					node.node_content = "and";
+					node.node_type = 4;
+					node.left_node = parseWhere(node, str.substring(1, k), loop);
+					node.right_node = parseWhere(node, str.substring(k + 6), loop);
+					node.parent_node = rootnode;
+				} else if (str.substring(k + 1, k + 5).equals(" or ") == true) {
+					node.node_content = "or";
+					node.node_type = 4;
+					node.left_node = parseWhere(node, str.substring(1, k), loop);
+					node.right_node = parseWhere(node, str.substring(k + 5), loop);
+					node.parent_node = rootnode;
+				}
+
+				return node;
+
+			}
+		} else {
 			addr_and = str.indexOf(" and ");
 			addr_or = str.indexOf(" or ");
-			if(addr_and > 0 && addr_or > 0)
-				if(addr_and < addr_or)
-				{
-					//×îÔçÕÒµ½and
-					node.node_content="and";
-			    	node.node_type=4;
-			    	node.parent_node=rootnode;
-			    	node.left_node=parseBase(node,str.substring(0,addr_and).trim());
-			    	node.right_node=parseWhere(node,str.substring(addr_and+5),loop);
-			    	return node;
+			if (addr_and > 0 && addr_or > 0)
+				if (addr_and < addr_or) {
+					// æœ€æ—©æ‰¾åˆ°and
+					node.node_content = "and";
+					node.node_type = 4;
+					node.parent_node = rootnode;
+					node.left_node = parseBase(node, str.substring(0, addr_and).trim());
+					node.right_node = parseWhere(node, str.substring(addr_and + 5), loop);
+					return node;
+				} else {
+					// æœ€æ—©æ‰¾åˆ°or
+					node.node_content = "or";
+					node.node_type = 4;
+					node.parent_node = rootnode;
+					node.left_node = parseBase(node, str.substring(0, addr_or).trim());
+					node.right_node = parseWhere(node, str.substring(addr_or + 4), loop);
+					return node;
 				}
-				else
-				{
-					//×îÔçÕÒµ½or
-					node.node_content="or";
-				    node.node_type=4;
-				    node.parent_node=rootnode;
-				    node.left_node=parseBase(node,str.substring(0,addr_or).trim());
-				    node.right_node=parseWhere(node,str.substring(addr_or+4),loop);
-				    return node;
-				}
-			else if(addr_and > 0)
-			{
-				node.node_content="and";
-		    	node.node_type=4;
-		    	node.parent_node=rootnode;
-		    	node.left_node=parseBase(node,str.substring(0,addr_and).trim());
-		    	node.right_node=parseWhere(node,str.substring(addr_and+5),loop);
-		    	return node;
+			else if (addr_and > 0) {
+				node.node_content = "and";
+				node.node_type = 4;
+				node.parent_node = rootnode;
+				node.left_node = parseBase(node, str.substring(0, addr_and).trim());
+				node.right_node = parseWhere(node, str.substring(addr_and + 5), loop);
+				return node;
 			}
-			
-			else if(addr_or > 0)
-			{
-				node.node_content="or";
-			    node.node_type=4;
-			    node.parent_node=rootnode;
-			    node.left_node=parseBase(node,str.substring(0,addr_or).trim());
-			    node.right_node=parseWhere(node,str.substring(addr_or+4),loop);
-			    return node;
+
+			else if (addr_or > 0) {
+				node.node_content = "or";
+				node.node_type = 4;
+				node.parent_node = rootnode;
+				node.left_node = parseBase(node, str.substring(0, addr_or).trim());
+				node.right_node = parseWhere(node, str.substring(addr_or + 4), loop);
+				return node;
+			} else {
+				// å¤„ç†åŸºæœ¬è¿ç®—
+				return parseBase(rootnode, str);
 			}
-			else {
-				//´¦Àí»ù±¾ÔËËã
-	    	    return parseBase(rootnode,str);
-			}
-		}   
+		}
 	}
-    
+
 	/*
-	 * Êä³öÒ»¿ÅÊ÷µÄĞÅÏ¢
+	 * è¾“å‡ºä¸€é¢—æ ‘çš„ä¿¡æ¯
 	 */
-	public void printTree(Tree_Node rootnode)
-	{
-		if(rootnode != null)
-		{	
-			System.out.println("NODE ID:"+rootnode.hashCode()+", NODE CONTENT:"+rootnode.node_content);
+	public void printTree(Tree_Node rootnode) {
+		if (rootnode != null) {
+			System.out.println("NODE ID:" + rootnode.hashCode() + ", NODE CONTENT:" + rootnode.node_content);
 		}
-		
-		if(rootnode.left_node != null)
-		{
-			System.out.println("My PARENT NODE CONTENT:"+rootnode.node_content+", NODE ID:"+rootnode.hashCode()+", LEFT CHILD ");
-		    printTree(rootnode.left_node);
+
+		if (rootnode.left_node != null) {
+			System.out
+					.println("My PARENT NODE CONTENT:" + rootnode.node_content + ", NODE ID:" + rootnode.hashCode() + ", LEFT CHILD ");
+			printTree(rootnode.left_node);
 		}
-		
-		if(rootnode.right_node != null)
-		{
-			System.out.println("My PARENT NODE CONTENT:"+rootnode.node_content+", NODE ID:"+rootnode.hashCode()+", RIGHT CHILD ");
+
+		if (rootnode.right_node != null) {
+			System.out.println(
+					"My PARENT NODE CONTENT:" + rootnode.node_content + ", NODE ID:" + rootnode.hashCode() + ", RIGHT CHILD ");
 			printTree(rootnode.right_node);
 		}
-			
+
 	}
-	
+
 }

@@ -14,59 +14,56 @@
 package com.taobao.sqlautoreview;
 
 /*
- * ÓÃÓÚË÷ÒıºÏ²¢
- * ·ÖÎöµ¥Ìõ½¨Ë÷ÒıµÄÓï¾ä
+ * ç”¨äºç´¢å¼•åˆå¹¶
+ * åˆ†æå•æ¡å»ºç´¢å¼•çš„è¯­å¥
  */
 public class MergeIndex_Node {
-	 //´´½¨Ë÷ÒıµÄÍêÕû½Å±¾
-	 String createIndexScript;
-	 //Ë÷ÒıµÄÃû×Ö
-     String index_name;
-     //Ë÷ÒıµÄ×Ö¶Î
-     String indexed_columns;
-     //Ë÷ÒıµÄ×Ö¶Î¸öÊı
-     int indexed_columns_num;
-     //ÊÇ·ñ±£Áô
-     int keep;
-     
-     /*
-      * ¹¹Ôìº¯Êı
-      */
-     public MergeIndex_Node(String createIndexScript)
-     {
-    	 this.createIndexScript=createIndexScript;
-    	 this.index_name=getIndexName();
-    	 this.indexed_columns=getIndexedColumns();
-    	 this.indexed_columns_num=getIndexColumnsNum();
-    	 this.keep=0;
-     }
-     
-     /*
-      * »ñµÃË÷ÒıµÄÃû×Ö
-      */
-     private String getIndexName() 
-     {
-    	int addr_index=createIndexScript.indexOf(" index ");
-    	int addr_on=createIndexScript.indexOf(" on ");
-    	return createIndexScript.substring(addr_index+7, addr_on).trim();
+	// åˆ›å»ºç´¢å¼•çš„å®Œæ•´è„šæœ¬
+	String createIndexScript;
+	// ç´¢å¼•çš„åå­—
+	String index_name;
+	// ç´¢å¼•çš„å­—æ®µ
+	String indexed_columns;
+	// ç´¢å¼•çš„å­—æ®µä¸ªæ•°
+	int indexed_columns_num;
+	// æ˜¯å¦ä¿ç•™
+	int keep;
+
+	/*
+	 * æ„é€ å‡½æ•°
+	 */
+	public MergeIndex_Node(String createIndexScript) {
+		this.createIndexScript = createIndexScript;
+		this.index_name = getIndexName();
+		this.indexed_columns = getIndexedColumns();
+		this.indexed_columns_num = getIndexColumnsNum();
+		this.keep = 0;
 	}
-     
-     /*
-      * »ñµÃË÷ÒıµÄ×Ö¶Î
-      */
-     private String getIndexedColumns() {
-		int addr_left_kuohao=createIndexScript.indexOf("(");
-		int addr_right_kuohao=createIndexScript.indexOf(")");
-		return createIndexScript.substring(addr_left_kuohao+1, addr_right_kuohao).trim();
+
+	/*
+	 * è·å¾—ç´¢å¼•çš„åå­—
+	 */
+	private String getIndexName() {
+		int addr_index = createIndexScript.indexOf(" index ");
+		int addr_on = createIndexScript.indexOf(" on ");
+		return createIndexScript.substring(addr_index + 7, addr_on).trim();
 	}
-     /*
- 	 * Í³¼Æset_new_indexes¸÷Ë÷ÒıµÄË÷Òı×Ö¶Î¸öÊı
- 	 */
- 	private int getIndexColumnsNum() 
- 	{
- 		String[] array_indexed_columns=indexed_columns.split(",");
- 		return array_indexed_columns.length;
- 		
- 		
- 	}
+
+	/*
+	 * è·å¾—ç´¢å¼•çš„å­—æ®µ
+	 */
+	private String getIndexedColumns() {
+		int addr_left_kuohao = createIndexScript.indexOf("(");
+		int addr_right_kuohao = createIndexScript.indexOf(")");
+		return createIndexScript.substring(addr_left_kuohao + 1, addr_right_kuohao).trim();
+	}
+
+	/*
+	 * ç»Ÿè®¡set_new_indexeså„ç´¢å¼•çš„ç´¢å¼•å­—æ®µä¸ªæ•°
+	 */
+	private int getIndexColumnsNum() {
+		String[] array_indexed_columns = indexed_columns.split(",");
+		return array_indexed_columns.length;
+
+	}
 }

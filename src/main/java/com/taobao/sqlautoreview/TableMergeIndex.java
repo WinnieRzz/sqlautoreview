@@ -20,435 +20,388 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-
 import org.apache.log4j.Logger;
 
-
-
 /*
- * ½«Ò»¸ötableµÄË÷Òı½øĞĞºÏ²¢
+ * å°†ä¸€ä¸ªtableçš„ç´¢å¼•è¿›è¡Œåˆå¹¶
  */
-public class TableMergeIndex 
-{
-	 //log4jÈÕÖ¾
-    private static Logger logger = Logger.getLogger(TableMergeIndex.class);
-	//±íÃû
+public class TableMergeIndex {
+	// log4jæ—¥å¿—
+	private static Logger logger = Logger.getLogger(TableMergeIndex.class);
+	// è¡¨å
 	String tablename;
-    //±íÉÏÒÑ¾­´æÔÚµÄË÷Òı
+	// è¡¨ä¸Šå·²ç»å­˜åœ¨çš„ç´¢å¼•
 	List<MergeIndex_Node> list_exist_indexes;
-	//±¾´ÎSQL reviewĞÂ´´½¨µÄË÷Òı
+	// æœ¬æ¬¡SQL reviewæ–°åˆ›å»ºçš„ç´¢å¼•
 	List<MergeIndex_Node> list_new_indexes;
-	//ÒÑ´æÔÚµÄË÷ÒıÈ¥ÖØ
+	// å·²å­˜åœ¨çš„ç´¢å¼•å»é‡
 	Set<MergeIndex_Node> set_exist_indexes;
-	//ĞÂ´´½¨µÄË÷ÒıÈ¥ÖØ
+	// æ–°åˆ›å»ºçš„ç´¢å¼•å»é‡
 	Set<MergeIndex_Node> set_new_indexes;
-	//½á¹û
+	// ç»“æœ
 	Set<MergeIndex_Node> set_result_new_indexes;
-	
+
 	/*
-	 * ¹¹Ôìº¯Êı
+	 * æ„é€ å‡½æ•°
 	 */
-	public TableMergeIndex(String tablename)
-	{
-		this.tablename=tablename;
-		this.list_exist_indexes=new LinkedList<MergeIndex_Node>();
-		this.list_new_indexes=new LinkedList<MergeIndex_Node>();
-		this.set_exist_indexes=new HashSet<MergeIndex_Node>();
-		this.set_new_indexes=new HashSet<MergeIndex_Node>();
-		this.set_result_new_indexes=new HashSet<MergeIndex_Node>();
+	public TableMergeIndex(String tablename) {
+		this.tablename = tablename;
+		this.list_exist_indexes = new LinkedList<MergeIndex_Node>();
+		this.list_new_indexes = new LinkedList<MergeIndex_Node>();
+		this.set_exist_indexes = new HashSet<MergeIndex_Node>();
+		this.set_new_indexes = new HashSet<MergeIndex_Node>();
+		this.set_result_new_indexes = new HashSet<MergeIndex_Node>();
 	}
-	
+
 	/*
-	 * Ìî³åÁ½¸ölist
+	 * å¡«å†²ä¸¤ä¸ªlist
 	 */
-	private void addIndexToList(List<MergeIndex_Node> list,int type)
-	{
-		if(list==null){
+	private void addIndexToList(List<MergeIndex_Node> list, int type) {
+		if (list == null) {
 			return;
 		}
-		
-		if(type==1){
-			this.list_exist_indexes=list;
-		}else if(type==2){
-			this.list_new_indexes=list;
+
+		if (type == 1) {
+			this.list_exist_indexes = list;
+		} else if (type == 2) {
+			this.list_new_indexes = list;
 		}
 	}
-	
+
 	/*
-	 * indexµÚÒ»´Î¼òµ¥×ÔÈ¥ÖØ,Í¨¹ısetÀ´Íê³É
-	 * index_name,indexed_columnsÁ½Õß¶¼ÏàÍ¬,²Å»áÈ¥ÖØ
+	 * indexç¬¬ä¸€æ¬¡ç®€å•è‡ªå»é‡,é€šè¿‡setæ¥å®Œæˆ index_name,indexed_columnsä¸¤è€…éƒ½ç›¸åŒ,æ‰ä¼šå»é‡
 	 */
-	private void deleteRepeatIndex1() 
-	{
-		if(this.list_exist_indexes.size()!=0){
-			this.set_exist_indexes.addAll(list_exist_indexes);	
-		}else {
+	private void deleteRepeatIndex1() {
+		if (this.list_exist_indexes.size() != 0) {
+			this.set_exist_indexes.addAll(list_exist_indexes);
+		} else {
 			logger.info("list_exist_indexes size = 0.");
 		}
-		
-		if(this.list_new_indexes.size()!=0){
+
+		if (this.list_new_indexes.size() != 0) {
 			this.set_new_indexes.addAll(list_new_indexes);
-		}else{
+		} else {
 			logger.info("list_new_indexes size = 0.");
 		}
 	}
-	
+
 	/*
-	 * indexµÚ¶ş´ÎÈ¥ÖØ
-	 * Èç¹ûset_new_indexesÖĞµÄindex,ÒÑÔÚset_exist_indexes´æÔÚ,ÄÇÃ´ĞèÒªÉ¾³ı
-	 * index_name,indexed_columnsÁ½Õß¶¼ÏàÍ¬,²Å»áÈ¥ÖØ
+	 * indexç¬¬äºŒæ¬¡å»é‡ å¦‚æœset_new_indexesä¸­çš„index,å·²åœ¨set_exist_indexeså­˜åœ¨,é‚£ä¹ˆéœ€è¦åˆ é™¤
+	 * index_name,indexed_columnsä¸¤è€…éƒ½ç›¸åŒ,æ‰ä¼šå»é‡
 	 */
-	private void deleteRepeatIndex2() 
-	{
-		if(set_exist_indexes.size()==0 || set_new_indexes.size()==0){
+	private void deleteRepeatIndex2() {
+		if (set_exist_indexes.size() == 0 || set_new_indexes.size() == 0) {
 			return;
 		}
-		
-		for(MergeIndex_Node mergeIndex_Node:set_exist_indexes)
-		{
-			if(set_new_indexes.contains(mergeIndex_Node)){
+
+		for (MergeIndex_Node mergeIndex_Node : set_exist_indexes) {
+			if (set_new_indexes.contains(mergeIndex_Node)) {
 				set_new_indexes.remove(mergeIndex_Node);
 			}
 		}
 	}
-	
+
 	/*
-	 * indexµÚÈı´ÎÈ¥ÖØ
-	 * ¾ßÓĞÏàÍ¬µÄË÷Òı×Ö¶Î,Ë÷ÒıÃû²»Í¬,ÕâÑùµÄË÷ÒıÖ»ĞèÒª±£ÁôÒ»¸ö¼´¿É
-	 * ÕâÖÖÇé¿öÖ»´æÔÚÓÚÁ½¸ösetÖ®¼ä,²»¿ÉÄÜ´æÔÚÓÚµ¥¸ösetÄÚ²¿
+	 * indexç¬¬ä¸‰æ¬¡å»é‡ å…·æœ‰ç›¸åŒçš„ç´¢å¼•å­—æ®µ,ç´¢å¼•åä¸åŒ,è¿™æ ·çš„ç´¢å¼•åªéœ€è¦ä¿ç•™ä¸€ä¸ªå³å¯ è¿™ç§æƒ…å†µåªå­˜åœ¨äºä¸¤ä¸ªsetä¹‹é—´,ä¸å¯èƒ½å­˜åœ¨äºå•ä¸ªsetå†…éƒ¨
 	 */
-	private void deleteRepeatIndex3() 
-	{
+	private void deleteRepeatIndex3() {
 		String indexed_columns;
-		if(set_exist_indexes.size()==0 || set_new_indexes.size()==0){
+		if (set_exist_indexes.size() == 0 || set_new_indexes.size() == 0) {
 			return;
 		}
-		for(MergeIndex_Node mergeIndex_Node:set_exist_indexes)
-		{
-			indexed_columns=mergeIndex_Node.indexed_columns;
-			//logger.info(indexed_columns);
+		for (MergeIndex_Node mergeIndex_Node : set_exist_indexes) {
+			indexed_columns = mergeIndex_Node.indexed_columns;
+			// logger.info(indexed_columns);
 			removeExistIndexColumns(indexed_columns);
 		}
 	}
-	
+
 	/*
-	 * É¾µôÔÚset_new_indexesÓëÀÏµÄË÷Òı×Ö¶ÎÏàÍ¬µÄ½Úµã
+	 * åˆ æ‰åœ¨set_new_indexesä¸è€çš„ç´¢å¼•å­—æ®µç›¸åŒçš„èŠ‚ç‚¹
 	 */
-	private void removeExistIndexColumns(String indexed_columns)
-	{
-		logger.debug("removeExistIndexColumns:"+set_new_indexes.size());
-		Set<MergeIndex_Node> tmp_set_new_indexes=new HashSet<MergeIndex_Node>();
-		
-		if(set_new_indexes.size()==0){
+	private void removeExistIndexColumns(String indexed_columns) {
+		logger.debug("removeExistIndexColumns:" + set_new_indexes.size());
+		Set<MergeIndex_Node> tmp_set_new_indexes = new HashSet<MergeIndex_Node>();
+
+		if (set_new_indexes.size() == 0) {
 			return;
 		}
-		
-		for(MergeIndex_Node mergeIndex_Node:set_new_indexes)
-		{
-				tmp_set_new_indexes.add(mergeIndex_Node);
+
+		for (MergeIndex_Node mergeIndex_Node : set_new_indexes) {
+			tmp_set_new_indexes.add(mergeIndex_Node);
 		}
-		
+
 		set_new_indexes.clear();
-		
-		for(MergeIndex_Node mergeIndex_Node:tmp_set_new_indexes){
-			if(mergeIndex_Node.indexed_columns.equals(indexed_columns)==false)
-			{
+
+		for (MergeIndex_Node mergeIndex_Node : tmp_set_new_indexes) {
+			if (mergeIndex_Node.indexed_columns.equals(indexed_columns) == false) {
 				set_new_indexes.add(mergeIndex_Node);
 			}
 		}
 		tmp_set_new_indexes.clear();
-		logger.debug("removeExistIndexColumns:"+set_new_indexes.size());
+		logger.debug("removeExistIndexColumns:" + set_new_indexes.size());
 	}
 
 	/*
-	 * ĞÂ½¨µÄË÷Òı×Ö¶Î,ÊÇÒÑ´æÔÚµÄË÷Òı×Ö¶ÎµÄ×Ó¼¯,²¢ÇÒË³ĞòÒªÒ»Ñù,ÕâÑùµÄË÷ÒıÒ²¿ÉÒÔÉ¾³ı
-	 * set_new_indexesÄÚ²¿ĞèÒª´¦Àí,set_new_indexesÓëset_exist_indexesÒ²ĞèÒª´¦Àí
+	 * æ–°å»ºçš„ç´¢å¼•å­—æ®µ,æ˜¯å·²å­˜åœ¨çš„ç´¢å¼•å­—æ®µçš„å­é›†,å¹¶ä¸”é¡ºåºè¦ä¸€æ ·,è¿™æ ·çš„ç´¢å¼•ä¹Ÿå¯ä»¥åˆ é™¤
+	 * set_new_indexeså†…éƒ¨éœ€è¦å¤„ç†,set_new_indexesä¸set_exist_indexesä¹Ÿéœ€è¦å¤„ç†
 	 */
 	private void indexMerge1() {
-		//ÓÅÏÈ´¦Àíset_new_indexesÓëset_exist_indexesÖ®¼äµÄÏàËÆÖ®´¦
-		//ÒÔÔ­À´´æÔÚµÄË÷ÒıÎª»ù×¼
-		 compareNewIndexToExistIndex();
-		
-		//ÔÙ´¦Àíset_new_indexesÄÚ²¿µÄÏàËÆÖ®´¦
-		//ĞèÒª½«set_new_indexes×Ö¶ÎµÄ¸öÊı¶àÉÙÏÈ½øĞĞÅÅĞò,×Ö¶ÎÉÙµÄË÷ÒıºÏ²¢µ½×Ö¶Î¶àµÄË÷ÒıÉÏ
-		 mergeNewIndexes();
-		
-		//¿´¿´Ô­À´´æÔÚµÄË÷Òı,ÊÇ·ñÓĞĞèÒª×ÔºÏ²¢µÄµØ·½
-		//Èç¹ûÓĞ,ĞèÒª°ÑÉ¾³ıË÷ÒıµÄ½Å±¾·ÅÈëµ½set_result_new_indexesÖĞ
-		//É¾³ıÔ­ÓĞË÷ÒıµÄ¶¯×÷ÒªĞ¡ĞÄ
-		 mergeExistIndexes();
-		
-		
-		//¿´¿´Ô­À´´æÔÚµÄË÷Òı,ÊÇ²»ÊÇĞÂ½¨Ë÷Òı,Ë÷Òı×Ö¶ÎµÄ×Ó¼¯
-		//Èç¹ûÓĞ,ĞèÒª°ÑÉ¾³ıË÷ÒıµÄ½Å±¾·ÅÈëµ½set_result_new_indexesÖĞ
-		//É¾³ıÔ­ÓĞË÷ÒıµÄ¶¯×÷ÒªĞ¡ĞÄ
-		 compareExistIndexToLastNewIndex();
+		// ä¼˜å…ˆå¤„ç†set_new_indexesä¸set_exist_indexesä¹‹é—´çš„ç›¸ä¼¼ä¹‹å¤„
+		// ä»¥åŸæ¥å­˜åœ¨çš„ç´¢å¼•ä¸ºåŸºå‡†
+		compareNewIndexToExistIndex();
+
+		// å†å¤„ç†set_new_indexeså†…éƒ¨çš„ç›¸ä¼¼ä¹‹å¤„
+		// éœ€è¦å°†set_new_indexeså­—æ®µçš„ä¸ªæ•°å¤šå°‘å…ˆè¿›è¡Œæ’åº,å­—æ®µå°‘çš„ç´¢å¼•åˆå¹¶åˆ°å­—æ®µå¤šçš„ç´¢å¼•ä¸Š
+		mergeNewIndexes();
+
+		// çœ‹çœ‹åŸæ¥å­˜åœ¨çš„ç´¢å¼•,æ˜¯å¦æœ‰éœ€è¦è‡ªåˆå¹¶çš„åœ°æ–¹
+		// å¦‚æœæœ‰,éœ€è¦æŠŠåˆ é™¤ç´¢å¼•çš„è„šæœ¬æ”¾å…¥åˆ°set_result_new_indexesä¸­
+		// åˆ é™¤åŸæœ‰ç´¢å¼•çš„åŠ¨ä½œè¦å°å¿ƒ
+		mergeExistIndexes();
+
+		// çœ‹çœ‹åŸæ¥å­˜åœ¨çš„ç´¢å¼•,æ˜¯ä¸æ˜¯æ–°å»ºç´¢å¼•,ç´¢å¼•å­—æ®µçš„å­é›†
+		// å¦‚æœæœ‰,éœ€è¦æŠŠåˆ é™¤ç´¢å¼•çš„è„šæœ¬æ”¾å…¥åˆ°set_result_new_indexesä¸­
+		// åˆ é™¤åŸæœ‰ç´¢å¼•çš„åŠ¨ä½œè¦å°å¿ƒ
+		compareExistIndexToLastNewIndex();
 	}
-	
+
 	/*
-	 * Í¬Ò»¸ö±íÉÏµÄË÷ÒıÃû²»ÄÜÏàÍ¬
-	 * ĞèÒª´¦Àíset_result_new_indexesµÄË÷ÒıÃû
+	 * åŒä¸€ä¸ªè¡¨ä¸Šçš„ç´¢å¼•åä¸èƒ½ç›¸åŒ éœ€è¦å¤„ç†set_result_new_indexesçš„ç´¢å¼•å
 	 */
-	private void indexRename()
-	{   Random radom=new Random();
-		for(MergeIndex_Node mergeIndex_Node:set_result_new_indexes)
-		{
-			//Ë÷ÒıÃûÏÂ±ê
-			int i=Math.abs(radom.nextInt())%100;
-			String index_name=mergeIndex_Node.index_name;
-			//ÕâÖÖÒªÉ¾µôµÄË÷Òı,ÊÇ²»ĞèÒª´¦ÀíµÄ
-			if(mergeIndex_Node.keep==-1){
+	private void indexRename() {
+		Random radom = new Random();
+		for (MergeIndex_Node mergeIndex_Node : set_result_new_indexes) {
+			// ç´¢å¼•åä¸‹æ ‡
+			int i = Math.abs(radom.nextInt()) % 100;
+			String index_name = mergeIndex_Node.index_name;
+			// è¿™ç§è¦åˆ æ‰çš„ç´¢å¼•,æ˜¯ä¸éœ€è¦å¤„ç†çš„
+			if (mergeIndex_Node.keep == -1) {
 				continue;
 			}
-			
-			//¿´¿´ÔÚÔ­À´µÄË÷ÒıÖĞÊÇ·ñ´æÔÚÖØÃû
-			for(MergeIndex_Node tmp_mergeIndex_Node:set_exist_indexes){
-				if(tmp_mergeIndex_Node.keep==-1){
+
+			// çœ‹çœ‹åœ¨åŸæ¥çš„ç´¢å¼•ä¸­æ˜¯å¦å­˜åœ¨é‡å
+			for (MergeIndex_Node tmp_mergeIndex_Node : set_exist_indexes) {
+				if (tmp_mergeIndex_Node.keep == -1) {
 					continue;
 				}
-				if(tmp_mergeIndex_Node.index_name.equals(index_name)){
-					mergeIndex_Node.index_name=mergeIndex_Node.index_name+i;
-					mergeIndex_Node.createIndexScript="create index "+mergeIndex_Node.index_name+" on "+this.tablename;
-					mergeIndex_Node.createIndexScript=mergeIndex_Node.createIndexScript+"("+mergeIndex_Node.indexed_columns+")";
+				if (tmp_mergeIndex_Node.index_name.equals(index_name)) {
+					mergeIndex_Node.index_name = mergeIndex_Node.index_name + i;
+					mergeIndex_Node.createIndexScript = "create index " + mergeIndex_Node.index_name + " on " + this.tablename;
+					mergeIndex_Node.createIndexScript = mergeIndex_Node.createIndexScript + "(" + mergeIndex_Node.indexed_columns
+							+ ")";
 					break;
 				}
 			}
 		}
 	}
+
 	/*
-	 * ÒÔÔ­À´´æÔÚµÄË÷ÒıÎª»ù×¼,¼ì²éĞÂµÄË÷Òı×Ö¶ÎÊÇ·ñÔÚÔ­À´µÄË÷Òı×Ö¶ÎÖĞ
+	 * ä»¥åŸæ¥å­˜åœ¨çš„ç´¢å¼•ä¸ºåŸºå‡†,æ£€æŸ¥æ–°çš„ç´¢å¼•å­—æ®µæ˜¯å¦åœ¨åŸæ¥çš„ç´¢å¼•å­—æ®µä¸­
 	 */
-	private void compareNewIndexToExistIndex() 
-	{
+	private void compareNewIndexToExistIndex() {
 		String indexed_columns;
-		for(MergeIndex_Node mergeIndex_Node:set_exist_indexes)
-		{
-			indexed_columns=mergeIndex_Node.indexed_columns;
+		for (MergeIndex_Node mergeIndex_Node : set_exist_indexes) {
+			indexed_columns = mergeIndex_Node.indexed_columns;
 			removeExistSimilarIndexColumns(indexed_columns);
 		}
-		
+
 	}
 
 	/*
-	 * ¶ÔĞÂµÄË÷Òı×ÔĞĞ×ÔºÏ²¢
+	 * å¯¹æ–°çš„ç´¢å¼•è‡ªè¡Œè‡ªåˆå¹¶
 	 */
-	private void mergeNewIndexes() 
-	{
-		if(set_new_indexes.size()==0){
+	private void mergeNewIndexes() {
+		if (set_new_indexes.size() == 0) {
 			return;
 		}
-		
-		List<MergeIndex_Node> list_sort=new LinkedList<MergeIndex_Node>();
+
+		List<MergeIndex_Node> list_sort = new LinkedList<MergeIndex_Node>();
 		list_sort.addAll(set_new_indexes);
 		sortMergeIndexNodeList(list_sort);
-		list_sort=selfcheckMatch(list_sort);
-		set_result_new_indexes.addAll(list_sort);	
+		list_sort = selfcheckMatch(list_sort);
+		set_result_new_indexes.addAll(list_sort);
 	}
 
 	/*
-	 * ¶ÔÔ­À´´æÔÚµÄË÷Òı½øĞĞ×ÔºÏ²¢
-	 * drop index index_name on table
+	 * å¯¹åŸæ¥å­˜åœ¨çš„ç´¢å¼•è¿›è¡Œè‡ªåˆå¹¶ drop index index_name on table
 	 */
-	private void mergeExistIndexes() 
-	{
-		if(set_exist_indexes.size()==0){
+	private void mergeExistIndexes() {
+		if (set_exist_indexes.size() == 0) {
 			return;
 		}
-		List<MergeIndex_Node> list_sort=new LinkedList<MergeIndex_Node>();
+		List<MergeIndex_Node> list_sort = new LinkedList<MergeIndex_Node>();
 		list_sort.addAll(set_exist_indexes);
 		sortMergeIndexNodeList(list_sort);
-		list_sort=selfcheckMatch(list_sort);
-		
-		//½«list_sort·ÅÈëµ½Ò»¸öĞÂµÄ¼¯ºÏÖĞ
-		Set<MergeIndex_Node> set_exist_indexes2=new HashSet<MergeIndex_Node>();
+		list_sort = selfcheckMatch(list_sort);
+
+		// å°†list_sortæ”¾å…¥åˆ°ä¸€ä¸ªæ–°çš„é›†åˆä¸­
+		Set<MergeIndex_Node> set_exist_indexes2 = new HashSet<MergeIndex_Node>();
 		set_exist_indexes2.addAll(list_sort);
-		
-		//±È½ÏÁ½¸ö¼¯ºÏµÄ²îÒì,Õâ¸ö²îÒì¼´ÊÇÒªÉ¾µôµÄË÷Òı
-		for (Iterator<MergeIndex_Node> iterator=set_exist_indexes.iterator();iterator.hasNext();) {
-			MergeIndex_Node mergeIndex_Node=iterator.next();
-			if(!set_exist_indexes2.contains(mergeIndex_Node)){
-				//´ò±ê¼Ç
-				mergeIndex_Node.keep=-1;
-				//²»´æÔÚ
-				MergeIndex_Node tmp_merIndex_Node=new MergeIndex_Node(mergeIndex_Node.createIndexScript);
-				tmp_merIndex_Node.createIndexScript="drop index "+mergeIndex_Node.index_name+" on "+this.tablename;
-				tmp_merIndex_Node.keep=-1;
+
+		// æ¯”è¾ƒä¸¤ä¸ªé›†åˆçš„å·®å¼‚,è¿™ä¸ªå·®å¼‚å³æ˜¯è¦åˆ æ‰çš„ç´¢å¼•
+		for (Iterator<MergeIndex_Node> iterator = set_exist_indexes.iterator(); iterator.hasNext();) {
+			MergeIndex_Node mergeIndex_Node = iterator.next();
+			if (!set_exist_indexes2.contains(mergeIndex_Node)) {
+				// æ‰“æ ‡è®°
+				mergeIndex_Node.keep = -1;
+				// ä¸å­˜åœ¨
+				MergeIndex_Node tmp_merIndex_Node = new MergeIndex_Node(mergeIndex_Node.createIndexScript);
+				tmp_merIndex_Node.createIndexScript = "drop index " + mergeIndex_Node.index_name + " on " + this.tablename;
+				tmp_merIndex_Node.keep = -1;
 				set_result_new_indexes.add(tmp_merIndex_Node);
-				logger.debug("mergeExistIndexes : drop exist index:"+tmp_merIndex_Node.createIndexScript);
+				logger.debug("mergeExistIndexes : drop exist index:" + tmp_merIndex_Node.createIndexScript);
 			}
 		}
-		
+
 	}
 
-	
 	/*
-	 * ÒÔ×îºóÒªĞÂ½¨µÄË÷ÒıÎª»ù×¼,¼ì²éÒÔÇ°´æÔÚµÄË÷Òı×Ó¶Î,ÊÇ²»ÊÇĞÂ½¨Ë÷Òı×Ö¶ÎµÄ×Ó¼¯
+	 * ä»¥æœ€åè¦æ–°å»ºçš„ç´¢å¼•ä¸ºåŸºå‡†,æ£€æŸ¥ä»¥å‰å­˜åœ¨çš„ç´¢å¼•å­æ®µ,æ˜¯ä¸æ˜¯æ–°å»ºç´¢å¼•å­—æ®µçš„å­é›†
 	 */
-	private void compareExistIndexToLastNewIndex() 
-	{
+	private void compareExistIndexToLastNewIndex() {
 		String indexed_columns;
-		for(MergeIndex_Node mergeIndex_Node:set_new_indexes)
-		{
-			indexed_columns=mergeIndex_Node.indexed_columns;
-			String[] array_new_indexed_columns=indexed_columns.split(",");
-			for(MergeIndex_Node mergeIndex_Node2:set_exist_indexes){
-				//²»ĞèÒª´¦ÀíÒÑ¾­É¾µôµÄË÷Òı
-				if(mergeIndex_Node2.keep==-1){
+		for (MergeIndex_Node mergeIndex_Node : set_new_indexes) {
+			indexed_columns = mergeIndex_Node.indexed_columns;
+			String[] array_new_indexed_columns = indexed_columns.split(",");
+			for (MergeIndex_Node mergeIndex_Node2 : set_exist_indexes) {
+				// ä¸éœ€è¦å¤„ç†å·²ç»åˆ æ‰çš„ç´¢å¼•
+				if (mergeIndex_Node2.keep == -1) {
 					continue;
 				}
-				String[] array_exist_indexed_columns=mergeIndex_Node2.indexed_columns.split(",");
-				if(checkMatch(array_new_indexed_columns,array_exist_indexed_columns)){
-					//´ò±ê¼Ç
-					mergeIndex_Node2.keep=-1;
-					//Ìí¼Ó½ø×îºóµÄ½á¹ûµ±ÖĞ
-					MergeIndex_Node tmp_merIndex_Node=new MergeIndex_Node(mergeIndex_Node2.createIndexScript);
-					tmp_merIndex_Node.createIndexScript="drop index "+mergeIndex_Node2.index_name+" on "+this.tablename;
-					tmp_merIndex_Node.keep=-1;
+				String[] array_exist_indexed_columns = mergeIndex_Node2.indexed_columns.split(",");
+				if (checkMatch(array_new_indexed_columns, array_exist_indexed_columns)) {
+					// æ‰“æ ‡è®°
+					mergeIndex_Node2.keep = -1;
+					// æ·»åŠ è¿›æœ€åçš„ç»“æœå½“ä¸­
+					MergeIndex_Node tmp_merIndex_Node = new MergeIndex_Node(mergeIndex_Node2.createIndexScript);
+					tmp_merIndex_Node.createIndexScript = "drop index " + mergeIndex_Node2.index_name + " on " + this.tablename;
+					tmp_merIndex_Node.keep = -1;
 					set_result_new_indexes.add(tmp_merIndex_Node);
-					logger.debug("compareExistIndexToLastNewIndex : drop exist index:"+tmp_merIndex_Node.createIndexScript);
+					logger.debug("compareExistIndexToLastNewIndex : drop exist index:" + tmp_merIndex_Node.createIndexScript);
 				}
 			}
 		}
-		
-		
-		
+
 	}
-	
+
 	/*
-	 * ¼ì²é×Ô¼ºµÄË÷Òı×Ö¶Î,ÊÇ·ñÓë×Ô¼ºµÄÆäËüelementÓĞÏàËÆÖ®´¦
+	 * æ£€æŸ¥è‡ªå·±çš„ç´¢å¼•å­—æ®µ,æ˜¯å¦ä¸è‡ªå·±çš„å…¶å®ƒelementæœ‰ç›¸ä¼¼ä¹‹å¤„
 	 */
-	private List<MergeIndex_Node> selfcheckMatch(List<MergeIndex_Node> list_sort) 
-	{
-		//±£´æ·µ»ØµÄ½á¹û
-		List<MergeIndex_Node> tmp_list_sort=new LinkedList<MergeIndex_Node>();
-		for(int i=0;i<list_sort.size();i++)
-		{
-			if(list_sort.get(i).keep==-1){
+	private List<MergeIndex_Node> selfcheckMatch(List<MergeIndex_Node> list_sort) {
+		// ä¿å­˜è¿”å›çš„ç»“æœ
+		List<MergeIndex_Node> tmp_list_sort = new LinkedList<MergeIndex_Node>();
+		for (int i = 0; i < list_sort.size(); i++) {
+			if (list_sort.get(i).keep == -1) {
 				continue;
 			}
-			String[] array_new_index1=list_sort.get(i).indexed_columns.split(",");
-			for(int j=i+1;j<list_sort.size();j++)
-			{
-				String[] array_new_index2=list_sort.get(j).indexed_columns.split(",");
-				if(checkMatch(array_new_index1,array_new_index2)){
-					//ÏÈ´ò±ê¼Ç
-					list_sort.get(j).keep=-1;
+			String[] array_new_index1 = list_sort.get(i).indexed_columns.split(",");
+			for (int j = i + 1; j < list_sort.size(); j++) {
+				String[] array_new_index2 = list_sort.get(j).indexed_columns.split(",");
+				if (checkMatch(array_new_index1, array_new_index2)) {
+					// å…ˆæ‰“æ ‡è®°
+					list_sort.get(j).keep = -1;
 				}
 			}
 		}
-		for(int i=0;i<list_sort.size();i++){
-			if(list_sort.get(i).keep!=-1){
+		for (int i = 0; i < list_sort.size(); i++) {
+			if (list_sort.get(i).keep != -1) {
 				tmp_list_sort.add(list_sort.get(i));
 			}
 		}
-		
+
 		list_sort.clear();
 		return tmp_list_sort;
-		
+
 	}
 
 	/*
-	 * ¶ÔÒ»¸ölist<MergeIndex_Node>°´indexed_columns_num´óĞ¡½øĞĞÅÅĞò
+	 * å¯¹ä¸€ä¸ªlist<MergeIndex_Node>æŒ‰indexed_columns_numå¤§å°è¿›è¡Œæ’åº
 	 */
-	private void sortMergeIndexNodeList(List<MergeIndex_Node> list_sort) 
-	{
-		//ÅÅĞò
-		for(int i=0;i<list_sort.size();i++)
-		{
-			for(int j=i+1;j<list_sort.size();j++)
-			{
-				if(list_sort.get(i).indexed_columns_num < list_sort.get(j).indexed_columns_num)
-				{
-					//½»»»
+	private void sortMergeIndexNodeList(List<MergeIndex_Node> list_sort) {
+		// æ’åº
+		for (int i = 0; i < list_sort.size(); i++) {
+			for (int j = i + 1; j < list_sort.size(); j++) {
+				if (list_sort.get(i).indexed_columns_num < list_sort.get(j).indexed_columns_num) {
+					// äº¤æ¢
 					MergeIndex_Node tmp_cc = list_sort.get(i);
 					list_sort.set(i, list_sort.get(j));
-					list_sort.set(j, tmp_cc);	
+					list_sort.set(j, tmp_cc);
 				}
 			}
 		}
-		
+
 	}
 
 	/*
-	 * É¾µôÔÚset_new_indexesÓëÀÏµÄË÷Òı×Ö¶ÎÏàËÆµÄ½Úµã
-	 * ÕâÀï±ØĞëÒª°´×Ö¶Î±È½Ï
+	 * åˆ æ‰åœ¨set_new_indexesä¸è€çš„ç´¢å¼•å­—æ®µç›¸ä¼¼çš„èŠ‚ç‚¹ è¿™é‡Œå¿…é¡»è¦æŒ‰å­—æ®µæ¯”è¾ƒ
 	 */
-	private void removeExistSimilarIndexColumns(String indexed_columns) 
-	{
-		String[] array_exist_indexed_columns=indexed_columns.split(",");
-		Set<MergeIndex_Node> tmp_set_new_indexes=new HashSet<MergeIndex_Node>();
+	private void removeExistSimilarIndexColumns(String indexed_columns) {
+		String[] array_exist_indexed_columns = indexed_columns.split(",");
+		Set<MergeIndex_Node> tmp_set_new_indexes = new HashSet<MergeIndex_Node>();
 		tmp_set_new_indexes.addAll(set_new_indexes);
-		for(Iterator<MergeIndex_Node> iterator=tmp_set_new_indexes.iterator();iterator.hasNext();)
-		{
-			MergeIndex_Node mergeIndex_Node=iterator.next();
-			String[] array_new_indexed_columns=mergeIndex_Node.indexed_columns.split(",");
-			if(checkMatch(array_exist_indexed_columns,array_new_indexed_columns)){
+		for (Iterator<MergeIndex_Node> iterator = tmp_set_new_indexes.iterator(); iterator.hasNext();) {
+			MergeIndex_Node mergeIndex_Node = iterator.next();
+			String[] array_new_indexed_columns = mergeIndex_Node.indexed_columns.split(",");
+			if (checkMatch(array_exist_indexed_columns, array_new_indexed_columns)) {
 				set_new_indexes.remove(mergeIndex_Node);
 			}
 		}
 	}
 
-	
 	/*
-	 * ÏêÏ¸±È½ÏÁ½¸öË÷Òı×Ö¶ÎµÄÏàËÆÖ®´¦
+	 * è¯¦ç»†æ¯”è¾ƒä¸¤ä¸ªç´¢å¼•å­—æ®µçš„ç›¸ä¼¼ä¹‹å¤„
 	 */
-	private boolean checkMatch(String[] array_exist_indexed_columns,
-			String[] array_new_indexed_columns) 
-	{
-		if(array_new_indexed_columns.length>array_exist_indexed_columns.length){
+	private boolean checkMatch(String[] array_exist_indexed_columns, String[] array_new_indexed_columns) {
+		if (array_new_indexed_columns.length > array_exist_indexed_columns.length) {
 			return false;
 		}
-		for(int i=0;i<array_new_indexed_columns.length;i++){
-			if(array_new_indexed_columns[i].equals(array_exist_indexed_columns[i])==false){
+		for (int i = 0; i < array_new_indexed_columns.length; i++) {
+			if (array_new_indexed_columns[i].equals(array_exist_indexed_columns[i]) == false) {
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 
 	/*
-	 * printºÏ²¢ºóĞèÒªĞÂ½¨µÄË÷Òı
+	 * printåˆå¹¶åéœ€è¦æ–°å»ºçš„ç´¢å¼•
 	 */
-	public void print_result_new_index()
-	{
-		System.out.println("\n\n--------Merge Table "+this.tablename+" Indexes--------");
+	public void print_result_new_index() {
+		System.out.println("\n\n--------Merge Table " + this.tablename + " Indexes--------");
 		System.out.println("exist index as follows:");
-		for(MergeIndex_Node mergeIndex_Node:list_exist_indexes){
-			System.out.println("  "+mergeIndex_Node.createIndexScript);
+		for (MergeIndex_Node mergeIndex_Node : list_exist_indexes) {
+			System.out.println("  " + mergeIndex_Node.createIndexScript);
 		}
 		System.out.println("new index as follows:");
-		for(MergeIndex_Node mergeIndex_Node:list_new_indexes){
-			System.out.println("  "+mergeIndex_Node.createIndexScript);
+		for (MergeIndex_Node mergeIndex_Node : list_new_indexes) {
+			System.out.println("  " + mergeIndex_Node.createIndexScript);
 		}
 		System.out.println("Merge result:");
-		if(set_result_new_indexes.size()==0){
-			System.out.println("  ²»ĞèÒªĞÂ½¨Ë÷Òı.");
+		if (set_result_new_indexes.size() == 0) {
+			System.out.println("  ä¸éœ€è¦æ–°å»ºç´¢å¼•.");
 			return;
 		}
-		for(MergeIndex_Node mergeIndex_Node:set_result_new_indexes)
-		{
-			System.out.println("  "+mergeIndex_Node.createIndexScript);
+		for (MergeIndex_Node mergeIndex_Node : set_result_new_indexes) {
+			System.out.println("  " + mergeIndex_Node.createIndexScript);
 		}
 	}
-	
-	private List<String> getMergeIndexResult()
-	{
-		List<String> list=new LinkedList<String>();
-		for(MergeIndex_Node mergeIndex_Node:set_result_new_indexes)
-		{
+
+	private List<String> getMergeIndexResult() {
+		List<String> list = new LinkedList<String>();
+		for (MergeIndex_Node mergeIndex_Node : set_result_new_indexes) {
 			list.add(mergeIndex_Node.createIndexScript);
 		}
 		return list;
 	}
+
 	/*
-	 * Íâ²¿½Ó¿Ú
+	 * å¤–éƒ¨æ¥å£
 	 */
-	public List<String> tableMergeIndexService(List<MergeIndex_Node> list_exist_index,
-			List<MergeIndex_Node> list_new_index)
-	{
-		addIndexToList(list_exist_index,1);
-		addIndexToList(list_new_index,2);
+	public List<String> tableMergeIndexService(List<MergeIndex_Node> list_exist_index, List<MergeIndex_Node> list_new_index) {
+		addIndexToList(list_exist_index, 1);
+		addIndexToList(list_new_index, 2);
 		deleteRepeatIndex1();
 		deleteRepeatIndex2();
 		deleteRepeatIndex3();

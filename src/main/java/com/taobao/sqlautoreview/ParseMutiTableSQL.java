@@ -18,301 +18,280 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+
 /*
- * ´¦Àí¶à±í²éÑ¯µÄselectÀà
+ * å¤„ç†å¤šè¡¨æŸ¥è¯¢çš„selectç±»
  */
 public class ParseMutiTableSQL extends ParseSQL {
-	//log4jÈÕÖ¾
+	// log4jæ—¥å¿—
 	private static Logger logger = Logger.getLogger(ParseMutiTableSQL.class);
-	//±£´æÃ¿¸ö±íµÄ·ÖÎö½á¹û
+	// ä¿å­˜æ¯ä¸ªè¡¨çš„åˆ†æç»“æœ
 	public List<ParseStruct> list_ParseStruct;
-	//±£´æ±íÓë±íµÄjoin¹ØÏµ
-	public List<Table_Relationship> list_Table_Relationship ;
-	
-	
+	// ä¿å­˜è¡¨ä¸è¡¨çš„joinå…³ç³»
+	public List<Table_Relationship> list_Table_Relationship;
+
 	public ParseMutiTableSQL(String sql) {
 		super(sql);
-		//¶à±í±êÖ¾
-		tag=1;
-		//±£´æ¸÷±íµÄĞÅÏ¢
+		// å¤šè¡¨æ ‡å¿—
+		tag = 1;
+		// ä¿å­˜å„è¡¨çš„ä¿¡æ¯
 		list_ParseStruct = new LinkedList<ParseStruct>();
-		//±£´æ±íÓë±íµÄ¹ØÏµ
+		// ä¿å­˜è¡¨ä¸è¡¨çš„å…³ç³»
 		list_Table_Relationship = new LinkedList<Table_Relationship>();
 	}
-	
-	//·ÖÎöfromºóµÄtable
-	public int AnalyzeMutipleTable(String fromString) 
-	{
+
+	// åˆ†æfromåçš„table
+	public int AnalyzeMutipleTable(String fromString) {
 		logger.debug("enter function AnalyzeMutipleTable");
-		int length=fromString.trim().length();
-		int i=0;
-		int start=i;
-		while(i<=length)
-		{
-				ParseStruct parsestruct = new ParseStruct();
-				//table name
-				while(i+1<=length && fromString.substring(i, i+1).equals(" ")==false)
-					i++;
-				parsestruct.tablename=fromString.substring(start, i).trim();
-				logger.debug("table name:"+parsestruct.tablename);
-				//space
-				while(i+1<=length && fromString.substring(i, i+1).equals(" ")==true)
-					i++;
-				//±ğÃû¼ì²é
-				if(i+1<=length && fromString.substring(i, i+1).equals(",")==true)
-				{
-					errmsg="table has no alias table name.";
-					logger.warn(errmsg);
-					return -1;
-				}
-				
-				//¼ì²éÓĞÃ»ÓĞtablename as t1ÕâÖÖÌØÊâÓï·¨
-				if(i+3<=fromString.length() && fromString.substring(i, i+3).equals("as ")==true){
-					i=i+3;
-				}
-				//alias table name
-				start=i;
-				while(i+1<=length && fromString.substring(i,i+1).equals(",")==false)
-					i++;
-				parsestruct.alias_tablename=fromString.substring(start, i).trim();
-				logger.debug("alias table name:"+parsestruct.alias_tablename);
-				//½«Õâ¸ö±í,±ğÃûÌí¼Ó½øÁ´±íÀï
-				list_ParseStruct.add(parsestruct);
-				if(i+1>length)
-				{
-					break;
-				}
-				//Ìø¹ı, and space
+		int length = fromString.trim().length();
+		int i = 0;
+		int start = i;
+		while (i <= length) {
+			ParseStruct parsestruct = new ParseStruct();
+			// table name
+			while (i + 1 <= length && fromString.substring(i, i + 1).equals(" ") == false)
 				i++;
-				while(i+1<=length && fromString.substring(i, i+1).equals(" ")==true)
-					i++;
-				start=i;
+			parsestruct.tablename = fromString.substring(start, i).trim();
+			logger.debug("table name:" + parsestruct.tablename);
+			// space
+			while (i + 1 <= length && fromString.substring(i, i + 1).equals(" ") == true)
+				i++;
+			// åˆ«åæ£€æŸ¥
+			if (i + 1 <= length && fromString.substring(i, i + 1).equals(",") == true) {
+				errmsg = "table has no alias table name.";
+				logger.warn(errmsg);
+				return -1;
+			}
+
+			// æ£€æŸ¥æœ‰æ²¡æœ‰tablename as t1è¿™ç§ç‰¹æ®Šè¯­æ³•
+			if (i + 3 <= fromString.length() && fromString.substring(i, i + 3).equals("as ") == true) {
+				i = i + 3;
+			}
+			// alias table name
+			start = i;
+			while (i + 1 <= length && fromString.substring(i, i + 1).equals(",") == false)
+				i++;
+			parsestruct.alias_tablename = fromString.substring(start, i).trim();
+			logger.debug("alias table name:" + parsestruct.alias_tablename);
+			// å°†è¿™ä¸ªè¡¨,åˆ«åæ·»åŠ è¿›é“¾è¡¨é‡Œ
+			list_ParseStruct.add(parsestruct);
+			if (i + 1 > length) {
+				break;
+			}
+			// è·³è¿‡, and space
+			i++;
+			while (i + 1 <= length && fromString.substring(i, i + 1).equals(" ") == true)
+				i++;
+			start = i;
 		}
-		
+
 		return 0;
 	}
-    
-	//·ÖÎöwhereString,¶Ô²»Í¬±íµÄÌõ¼ş½øĞĞ¹éÀà´æ´¢,ÁĞÃûÇ°±ØĞëÒª¼ÓÉÏ±ğÃû
-	//Çı¶¯±íµÄÁ¬½Ó¼ü²»ÄÜ×÷ÎªÌõ¼ş;±»Çı¶¯±íµÄÁ¬½Ó¼ü¿ÉÒÔ×÷ÎªÌõ¼ş,¶øÇÒ»¹ÊÇÇ°µ¼ÁĞ
-	public int AnalyzeWhereStr(String whereString)
-	{
+
+	// åˆ†æwhereString,å¯¹ä¸åŒè¡¨çš„æ¡ä»¶è¿›è¡Œå½’ç±»å­˜å‚¨,åˆ—åå‰å¿…é¡»è¦åŠ ä¸Šåˆ«å
+	// é©±åŠ¨è¡¨çš„è¿æ¥é”®ä¸èƒ½ä½œä¸ºæ¡ä»¶;è¢«é©±åŠ¨è¡¨çš„è¿æ¥é”®å¯ä»¥ä½œä¸ºæ¡ä»¶,è€Œä¸”è¿˜æ˜¯å‰å¯¼åˆ—
+	public int AnalyzeWhereStr(String whereString) {
 		logger.debug("enter function AnalyzeWhereStr");
-		logger.debug("whereString:"+whereString);
-		//ÏÈ×÷Ò»¸ö¼ì²é
-		if(whereString.indexOf(" between ") > 0){
-			whereString=handleBetweenAnd(whereString);
+		logger.debug("whereString:" + whereString);
+		// å…ˆä½œä¸€ä¸ªæ£€æŸ¥
+		if (whereString.indexOf(" between ") > 0) {
+			whereString = handleBetweenAnd(whereString);
 		}
-		logger.debug("whereString:"+whereString);
-		//½«Ìõ¼şÉú³ÉÒ»¿ÅÊ÷
-		Tree_Node rootnode=parseWhere(null,whereString,0);
-		//±éÀúÕâ¿ÃÊ÷£¬½«Ê÷ÖĞµÄÌõ¼ş·Åµ½¶ÔÓ¦µÄ±íÉÏ
-		for(Iterator<ParseStruct> r=list_ParseStruct.iterator();r.hasNext();)
-		{
-			ParseStruct tmp_ps=r.next();
-			fillwhereString(tmp_ps,rootnode);
-			tmp_ps.whereString=tmp_ps.whereString.substring(0, tmp_ps.whereString.length()-1);
-			tmp_ps.whereString=tmp_ps.whereString.replace(tmp_ps.alias_tablename+".", "");
-			//log
-			logger.debug("table name:"+tmp_ps.tablename);
-			logger.debug("alias table name:"+tmp_ps.alias_tablename);
-			logger.debug("whereString:"+tmp_ps.whereString);
+		logger.debug("whereString:" + whereString);
+		// å°†æ¡ä»¶ç”Ÿæˆä¸€é¢—æ ‘
+		Tree_Node rootnode = parseWhere(null, whereString, 0);
+		// éå†è¿™æ£µæ ‘ï¼Œå°†æ ‘ä¸­çš„æ¡ä»¶æ”¾åˆ°å¯¹åº”çš„è¡¨ä¸Š
+		for (Iterator<ParseStruct> r = list_ParseStruct.iterator(); r.hasNext();) {
+			ParseStruct tmp_ps = r.next();
+			fillwhereString(tmp_ps, rootnode);
+			tmp_ps.whereString = tmp_ps.whereString.substring(0, tmp_ps.whereString.length() - 1);
+			tmp_ps.whereString = tmp_ps.whereString.replace(tmp_ps.alias_tablename + ".", "");
+			// log
+			logger.debug("table name:" + tmp_ps.tablename);
+			logger.debug("alias table name:" + tmp_ps.alias_tablename);
+			logger.debug("whereString:" + tmp_ps.whereString);
 		}
-		
+
 		findFirstAndLastTable();
-		findOtherTable(list_Table_Relationship.get(0), list_Table_Relationship.get(1), rootnode,rootnode);
-		logger.debug("tag:"+list_Table_Relationship.size());
+		findOtherTable(list_Table_Relationship.get(0), list_Table_Relationship.get(1), rootnode, rootnode);
+		logger.debug("tag:" + list_Table_Relationship.size());
 		logger.debug("join table order:");
-		for(int i=0;i<list_Table_Relationship.size();i++)
-		{
-			Table_Relationship tRelationship=list_Table_Relationship.get(i);
-			logger.debug("tablename:"+tRelationship.tablename+" alias tablename:"+tRelationship.alias_tablename);
-			logger.debug("join column1:"+tRelationship.columnname1+" join column2:"+tRelationship.columnname2);
+		for (int i = 0; i < list_Table_Relationship.size(); i++) {
+			Table_Relationship tRelationship = list_Table_Relationship.get(i);
+			logger.debug("tablename:" + tRelationship.tablename + " alias tablename:" + tRelationship.alias_tablename);
+			logger.debug("join column1:" + tRelationship.columnname1 + " join column2:" + tRelationship.columnname2);
 		}
-		
+
 		return 0;
 	}
-	
+
 	/*
-	 * ÕÒ¹ØÁª±íµÄµÚÒ»¸ö±í,ºÍ×îºóÒ»¸ö±í
+	 * æ‰¾å…³è”è¡¨çš„ç¬¬ä¸€ä¸ªè¡¨,å’Œæœ€åä¸€ä¸ªè¡¨
 	 */
-	private boolean findFirstAndLastTable()
-	{
-		boolean is_find=true;
-		boolean is_find_head=false;
-		for(Iterator<ParseStruct> r=list_ParseStruct.iterator();r.hasNext();)
-		{
-			ParseStruct tmp_ps=r.next();
-			if(tmp_ps.whereString.indexOf(":1")==tmp_ps.whereString.lastIndexOf(":1"))
-			{
+	private boolean findFirstAndLastTable() {
+		boolean is_find = true;
+		boolean is_find_head = false;
+		for (Iterator<ParseStruct> r = list_ParseStruct.iterator(); r.hasNext();) {
+			ParseStruct tmp_ps = r.next();
+			if (tmp_ps.whereString.indexOf(":1") == tmp_ps.whereString.lastIndexOf(":1")) {
 				Table_Relationship table_rel_node = new Table_Relationship();
-				table_rel_node.tablename=tmp_ps.tablename;
-				table_rel_node.alias_tablename=tmp_ps.alias_tablename;
-				if(is_find_head==false){
-				     table_rel_node.columnname2=findConnectColumn(tmp_ps.whereString);
-				}else {
-					 table_rel_node.columnname1=findConnectColumn(tmp_ps.whereString);
+				table_rel_node.tablename = tmp_ps.tablename;
+				table_rel_node.alias_tablename = tmp_ps.alias_tablename;
+				if (is_find_head == false) {
+					table_rel_node.columnname2 = findConnectColumn(tmp_ps.whereString);
+				} else {
+					table_rel_node.columnname1 = findConnectColumn(tmp_ps.whereString);
 				}
-		        list_Table_Relationship.add(table_rel_node);
-		        is_find_head=true;
+				list_Table_Relationship.add(table_rel_node);
+				is_find_head = true;
 			}
 		}
-		
-		if(list_Table_Relationship.size() != 2){
-			is_find=false;
-			errmsg=" must be 1 head and 1 tail table,which has just one join key.";
+
+		if (list_Table_Relationship.size() != 2) {
+			is_find = false;
+			errmsg = " must be 1 head and 1 tail table,which has just one join key.";
 			logger.warn(errmsg);
 		}
-		
+
 		return is_find;
 	}
-	
+
 	/*
-	 * Ñ°ÕÒÖĞ¼ä¹ØÁªµÄ±í
+	 * å¯»æ‰¾ä¸­é—´å…³è”çš„è¡¨
 	 */
-	private int findOtherTable(Table_Relationship last_Relationship,Table_Relationship tail_Relationship,Tree_Node rootnode,Tree_Node top_rootnode)
-	{
-		//Èç¹ûÊÇÁ½±íjoin,²»ĞèÒªµ÷ÓÃÕâ¸öº¯Êı
-		if(list_ParseStruct.size()==2){
+	private int findOtherTable(Table_Relationship last_Relationship, Table_Relationship tail_Relationship, Tree_Node rootnode,
+			Tree_Node top_rootnode) {
+		// å¦‚æœæ˜¯ä¸¤è¡¨join,ä¸éœ€è¦è°ƒç”¨è¿™ä¸ªå‡½æ•°
+		if (list_ParseStruct.size() == 2) {
 			return 0;
 		}
-		
-		//³¤¶È¼ì²é
-		int list_length=list_Table_Relationship.size();
-		if(list_length<2){
+
+		// é•¿åº¦æ£€æŸ¥
+		int list_length = list_Table_Relationship.size();
+		if (list_length < 2) {
 			logger.warn("less than 2 table.");
 			return -1;
 		}
-		int index=list_Table_Relationship.indexOf(last_Relationship);
-		//°²È«¼ì²é
-		if(rootnode==null || top_rootnode==null){
+		int index = list_Table_Relationship.indexOf(last_Relationship);
+		// å®‰å…¨æ£€æŸ¥
+		if (rootnode == null || top_rootnode == null) {
 			logger.warn("rootNode or top_rootnode is null,please check.");
-		    return -1;
+			return -1;
 		}
-		
-		if(rootnode.node_type==4)
-		{
-			findOtherTable(last_Relationship,tail_Relationship,rootnode.left_node,top_rootnode);
-			findOtherTable(last_Relationship,tail_Relationship,rootnode.right_node,top_rootnode);
-		}else if(rootnode.node_type==2)
-		{
-			//¼ì²éÁ¬½Ó¼ü
-			if(rootnode.node_content.equals("=") == true
-					&& rootnode.right_node.node_content.indexOf(".")>0 
-					&& rootnode.right_node.node_content.indexOf("#")<0)
-			{
-				String cnameString=last_Relationship.alias_tablename+"."+last_Relationship.columnname2;
-				//×ó±ß¾«È·Æ¥Åä,ÔòÓÒº¢×ÓÊÇÁíÍâÒ»¸ö±í
-				if(rootnode.left_node.node_content.equals(cnameString)==true)
-				{
-					Table_Relationship tmp_tRelationship=new Table_Relationship();
-					String aliastablename=rootnode.right_node.node_content.substring(0, rootnode.right_node.node_content.indexOf("."));
-					tmp_tRelationship.tablename=getTablenameByAlias(aliastablename);
-					tmp_tRelationship.alias_tablename=aliastablename;
-					tmp_tRelationship.columnname1=rootnode.right_node.node_content.substring(rootnode.right_node.node_content.indexOf(".")+1);
-					tmp_tRelationship.columnname2=findConnectColumn2(tmp_tRelationship.tablename,tmp_tRelationship.columnname1);
-					//×÷Ò»¸ö¼ì²é
-					if(tmp_tRelationship.columnname1.equals(tmp_tRelationship.columnname2)){
-						errmsg="tablename:"+tmp_tRelationship.tablename+" join key1:"+tmp_tRelationship.columnname1;
-						errmsg=errmsg+" join key2:"+tmp_tRelationship.columnname2;
-						errmsg=errmsg+" two join key must be different.";
+
+		if (rootnode.node_type == 4) {
+			findOtherTable(last_Relationship, tail_Relationship, rootnode.left_node, top_rootnode);
+			findOtherTable(last_Relationship, tail_Relationship, rootnode.right_node, top_rootnode);
+		} else if (rootnode.node_type == 2) {
+			// æ£€æŸ¥è¿æ¥é”®
+			if (rootnode.node_content.equals("=") == true && rootnode.right_node.node_content.indexOf(".") > 0
+					&& rootnode.right_node.node_content.indexOf("#") < 0) {
+				String cnameString = last_Relationship.alias_tablename + "." + last_Relationship.columnname2;
+				// å·¦è¾¹ç²¾ç¡®åŒ¹é…,åˆ™å³å­©å­æ˜¯å¦å¤–ä¸€ä¸ªè¡¨
+				if (rootnode.left_node.node_content.equals(cnameString) == true) {
+					Table_Relationship tmp_tRelationship = new Table_Relationship();
+					String aliastablename = rootnode.right_node.node_content.substring(0,
+							rootnode.right_node.node_content.indexOf("."));
+					tmp_tRelationship.tablename = getTablenameByAlias(aliastablename);
+					tmp_tRelationship.alias_tablename = aliastablename;
+					tmp_tRelationship.columnname1 = rootnode.right_node.node_content
+							.substring(rootnode.right_node.node_content.indexOf(".") + 1);
+					tmp_tRelationship.columnname2 = findConnectColumn2(tmp_tRelationship.tablename, tmp_tRelationship.columnname1);
+					// ä½œä¸€ä¸ªæ£€æŸ¥
+					if (tmp_tRelationship.columnname1.equals(tmp_tRelationship.columnname2)) {
+						errmsg = "tablename:" + tmp_tRelationship.tablename + " join key1:" + tmp_tRelationship.columnname1;
+						errmsg = errmsg + " join key2:" + tmp_tRelationship.columnname2;
+						errmsg = errmsg + " two join key must be different.";
 						logger.warn(errmsg);
 						return -1;
 					}
-					if(tmp_tRelationship.tablename.equals(tail_Relationship.tablename)==false){
-						list_Table_Relationship.add(index+1,tmp_tRelationship);
-						findOtherTable(tmp_tRelationship, tail_Relationship, top_rootnode,top_rootnode);
-					}
-					else {
+					if (tmp_tRelationship.tablename.equals(tail_Relationship.tablename) == false) {
+						list_Table_Relationship.add(index + 1, tmp_tRelationship);
+						findOtherTable(tmp_tRelationship, tail_Relationship, top_rootnode, top_rootnode);
+					} else {
 						return 0;
 					}
-				}
-				else if(rootnode.right_node.node_content.equals(cnameString)==true)
-				{
-				    //ÓÒ±ßÆ¥Åä,Ôò×óº¢×ÓÊÇÁíÍâÒ»¸ö±í
-					Table_Relationship tmp_tRelationship=new Table_Relationship();
-					String aliastablename=rootnode.left_node.node_content.substring(0, rootnode.left_node.node_content.indexOf("."));
-					tmp_tRelationship.tablename=getTablenameByAlias(aliastablename);
-					tmp_tRelationship.alias_tablename=aliastablename;
-					tmp_tRelationship.columnname1=rootnode.left_node.node_content.substring(rootnode.left_node.node_content.indexOf(".")+1);
-					tmp_tRelationship.columnname2=findConnectColumn2(tmp_tRelationship.tablename,tmp_tRelationship.columnname1);
-					//×÷Ò»¸ö¼ì²é
-					if(tmp_tRelationship.columnname1.equals(tmp_tRelationship.columnname2)){
-						errmsg="tablename:"+tmp_tRelationship.tablename+" join key1:"+tmp_tRelationship.columnname1;
-						errmsg=errmsg+" join key2:"+tmp_tRelationship.columnname2;
-						errmsg=errmsg+" two join key must be different.";
+				} else if (rootnode.right_node.node_content.equals(cnameString) == true) {
+					// å³è¾¹åŒ¹é…,åˆ™å·¦å­©å­æ˜¯å¦å¤–ä¸€ä¸ªè¡¨
+					Table_Relationship tmp_tRelationship = new Table_Relationship();
+					String aliastablename = rootnode.left_node.node_content.substring(0, rootnode.left_node.node_content.indexOf("."));
+					tmp_tRelationship.tablename = getTablenameByAlias(aliastablename);
+					tmp_tRelationship.alias_tablename = aliastablename;
+					tmp_tRelationship.columnname1 = rootnode.left_node.node_content
+							.substring(rootnode.left_node.node_content.indexOf(".") + 1);
+					tmp_tRelationship.columnname2 = findConnectColumn2(tmp_tRelationship.tablename, tmp_tRelationship.columnname1);
+					// ä½œä¸€ä¸ªæ£€æŸ¥
+					if (tmp_tRelationship.columnname1.equals(tmp_tRelationship.columnname2)) {
+						errmsg = "tablename:" + tmp_tRelationship.tablename + " join key1:" + tmp_tRelationship.columnname1;
+						errmsg = errmsg + " join key2:" + tmp_tRelationship.columnname2;
+						errmsg = errmsg + " two join key must be different.";
 						logger.warn(errmsg);
 						return -1;
 					}
-					if(tmp_tRelationship.tablename.equals(tail_Relationship.tablename)==false){
-						list_Table_Relationship.add(index+1,tmp_tRelationship);
-						findOtherTable(tmp_tRelationship, tail_Relationship, top_rootnode,top_rootnode);
-					}
-					else {
+					if (tmp_tRelationship.tablename.equals(tail_Relationship.tablename) == false) {
+						list_Table_Relationship.add(index + 1, tmp_tRelationship);
+						findOtherTable(tmp_tRelationship, tail_Relationship, top_rootnode, top_rootnode);
+					} else {
 						return 0;
 					}
 				}
 			}
 		}
-		
+
 		return 0;
 	}
-	
-	//ÕÒµ½µÚ¶ş¸öÁ¬½Ó¼ücolumnname2
+
+	// æ‰¾åˆ°ç¬¬äºŒä¸ªè¿æ¥é”®columnname2
 	private String findConnectColumn2(String tablename, String columnname1) {
-		
-		String whereString="";
-		String columnname2="";
-		String groupString=columnname1+":=:1";
-		for(int i=0;i<list_ParseStruct.size();i++)
-		{
-			if(list_ParseStruct.get(i).tablename.equals(tablename)==true)
-			{
-				whereString=list_ParseStruct.get(i).whereString;
+
+		String whereString = "";
+		String columnname2 = "";
+		String groupString = columnname1 + ":=:1";
+		for (int i = 0; i < list_ParseStruct.size(); i++) {
+			if (list_ParseStruct.get(i).tablename.equals(tablename) == true) {
+				whereString = list_ParseStruct.get(i).whereString;
 				break;
 			}
 		}
-		//ÕâÀï´¦ÀíÒ»ÖÖÌØÊâÇé¿ö
-		if(whereString.indexOf(";")<0){
-			logger.debug("findConnectColumn2 function: columnname1:"+columnname1+" columnname2:"+columnname2);
+		// è¿™é‡Œå¤„ç†ä¸€ç§ç‰¹æ®Šæƒ…å†µ
+		if (whereString.indexOf(";") < 0) {
+			logger.debug("findConnectColumn2 function: columnname1:" + columnname1 + " columnname2:" + columnname2);
 			return columnname2;
 		}
-		
-		logger.debug("findConnectColumn2 function:whereString:"+whereString);
-		
-		//ÔÚwhereStringÖĞÉ¾³ıcolumnname1
-		whereString=deleteColumn1InWhereStr(whereString,groupString);
-		
-		columnname2=findConnectColumn(whereString);
-		logger.debug("findConnectColumn2 function:whereString:"+whereString);
-		logger.debug("findConnectColumn2 function: columnname1:"+columnname1+" columnname2:"+columnname2);
+
+		logger.debug("findConnectColumn2 function:whereString:" + whereString);
+
+		// åœ¨whereStringä¸­åˆ é™¤columnname1
+		whereString = deleteColumn1InWhereStr(whereString, groupString);
+
+		columnname2 = findConnectColumn(whereString);
+		logger.debug("findConnectColumn2 function:whereString:" + whereString);
+		logger.debug("findConnectColumn2 function: columnname1:" + columnname1 + " columnname2:" + columnname2);
 		return columnname2;
 	}
 
-	//ÔÚwhereStringÖĞÉ¾³ıgroupString
-	private String deleteColumn1InWhereStr(String whereString,
-			String groupString) {
-		//ÖĞ¼äÆ¥Åä
-		if(whereString.indexOf(";"+groupString+";") > 0){
-			whereString=whereString.replace(";"+groupString+";", ";");
-		}else if(whereString.indexOf(groupString+";") >= 0){
-			//Í·Æ¥Åä
-			whereString=whereString.replace(groupString+";", "");
-		}else if(whereString.indexOf(";"+groupString) > 0){
-			//Î²Æ¥Åä
-			whereString=whereString.replace(";"+groupString, "");
+	// åœ¨whereStringä¸­åˆ é™¤groupString
+	private String deleteColumn1InWhereStr(String whereString, String groupString) {
+		// ä¸­é—´åŒ¹é…
+		if (whereString.indexOf(";" + groupString + ";") > 0) {
+			whereString = whereString.replace(";" + groupString + ";", ";");
+		} else if (whereString.indexOf(groupString + ";") >= 0) {
+			// å¤´åŒ¹é…
+			whereString = whereString.replace(groupString + ";", "");
+		} else if (whereString.indexOf(";" + groupString) > 0) {
+			// å°¾åŒ¹é…
+			whereString = whereString.replace(";" + groupString, "");
 		}
 		return whereString;
 	}
 
 	private String findConnectColumn(String whereString) {
-		String columnname="";
-		String [] columnStrings=whereString.split(";");
-		for(int i=0;i<columnStrings.length;i++)
-		{
-			String[] sub_columnStrings=columnStrings[i].split(":");
-			if(sub_columnStrings[1].equals("=") && sub_columnStrings[2].equals("1"))
-			{
-				columnname=sub_columnStrings[0];
+		String columnname = "";
+		String[] columnStrings = whereString.split(";");
+		for (int i = 0; i < columnStrings.length; i++) {
+			String[] sub_columnStrings = columnStrings[i].split(":");
+			if (sub_columnStrings[1].equals("=") && sub_columnStrings[2].equals("1")) {
+				columnname = sub_columnStrings[0];
 				break;
 			}
 		}
@@ -320,216 +299,194 @@ public class ParseMutiTableSQL extends ParseSQL {
 	}
 
 	/*
-	 * ¸ù¾İ±íµÄ±ğÃû,ÕÒ±íµÄÕæÃû
+	 * æ ¹æ®è¡¨çš„åˆ«å,æ‰¾è¡¨çš„çœŸå
 	 */
-	private String getTablenameByAlias(String alias_tablename)
-	{
-		String tablename="";
-		for(Iterator<ParseStruct> r=list_ParseStruct.iterator();r.hasNext();)
-		{
-			ParseStruct tmp_ps=r.next();
-			if(tmp_ps.alias_tablename.equals(alias_tablename)){
-				tablename=tmp_ps.tablename;
+	private String getTablenameByAlias(String alias_tablename) {
+		String tablename = "";
+		for (Iterator<ParseStruct> r = list_ParseStruct.iterator(); r.hasNext();) {
+			ParseStruct tmp_ps = r.next();
+			if (tmp_ps.alias_tablename.equals(alias_tablename)) {
+				tablename = tmp_ps.tablename;
 				break;
 			}
 		}
 		return tablename;
 	}
-	//½«Ê÷ÖĞµÄÌõ¼şÕÒ³öÀ´,Æ´½Óµ½whereStringÀïÃæ
-	//Æ´½Ó¸ñÊ½column_name:operator:is_join_key;column_name:operator:is_join_key
+
+	// å°†æ ‘ä¸­çš„æ¡ä»¶æ‰¾å‡ºæ¥,æ‹¼æ¥åˆ°whereStringé‡Œé¢
+	// æ‹¼æ¥æ ¼å¼column_name:operator:is_join_key;column_name:operator:is_join_key
 	private void fillwhereString(ParseStruct ps, Tree_Node rootnode) {
-	    if(ps.whereString==null) {
-	    	ps.whereString="";
-	    }
-		if(rootnode==null)
-		{
-			logger.warn("fillwhereString function: rootnode is null.ps.tablename="+ps.tablename+" ps.whereString="+ps.whereString);
+		if (ps.whereString == null) {
+			ps.whereString = "";
+		}
+		if (rootnode == null) {
+			logger.warn(
+					"fillwhereString function: rootnode is null.ps.tablename=" + ps.tablename + " ps.whereString=" + ps.whereString);
 			return;
 		}
-		if(rootnode.node_type==4){
-			fillwhereString(ps,rootnode.left_node);
-			fillwhereString(ps,rootnode.right_node);
-		}else if(rootnode.node_type==2) {
-			//¿´¿´right child valueÖĞÊÇ·ñº¬ÓĞ.,²¢ÇÒ²»º¬ÓĞ#,ÔòÈÏÎªÊÇÁ¬½Ó¼ü
-			if(rootnode.node_content.equals("=") == true
-					&& rootnode.right_node.node_content.indexOf(".")>0 
-					&& rootnode.right_node.node_content.indexOf("#")<0){
-				//Õâ¸ö½áµã´æÔÚÁ¬½Ó¼ü,¿´¿´×óÓÒº¢×Ó,ÄÄ¸öÆ¥Åä±ğÃû
-				if(rootnode.left_node.node_content.indexOf(ps.alias_tablename+".") >= 0){
-			           ps.whereString=ps.whereString+rootnode.left_node.node_content+":"+rootnode.node_content+":1;";
-				}else if(rootnode.right_node.node_content.indexOf(ps.alias_tablename+".") >=0){
-					   ps.whereString=ps.whereString+rootnode.right_node.node_content+":"+rootnode.node_content+":1;";
+		if (rootnode.node_type == 4) {
+			fillwhereString(ps, rootnode.left_node);
+			fillwhereString(ps, rootnode.right_node);
+		} else if (rootnode.node_type == 2) {
+			// çœ‹çœ‹right child valueä¸­æ˜¯å¦å«æœ‰.,å¹¶ä¸”ä¸å«æœ‰#,åˆ™è®¤ä¸ºæ˜¯è¿æ¥é”®
+			if (rootnode.node_content.equals("=") == true && rootnode.right_node.node_content.indexOf(".") > 0
+					&& rootnode.right_node.node_content.indexOf("#") < 0) {
+				// è¿™ä¸ªç»“ç‚¹å­˜åœ¨è¿æ¥é”®,çœ‹çœ‹å·¦å³å­©å­,å“ªä¸ªåŒ¹é…åˆ«å
+				if (rootnode.left_node.node_content.indexOf(ps.alias_tablename + ".") >= 0) {
+					ps.whereString = ps.whereString + rootnode.left_node.node_content + ":" + rootnode.node_content + ":1;";
+				} else if (rootnode.right_node.node_content.indexOf(ps.alias_tablename + ".") >= 0) {
+					ps.whereString = ps.whereString + rootnode.right_node.node_content + ":" + rootnode.node_content + ":1;";
 				}
-			}else {
-				//Ö»Ğè¼ì²éÒ»ÏÂ×óº¢×Ó,²¢ÇÒÕâ¸öÁĞÊÇ·ÇÁ¬½Ó¼ü
-				if(rootnode.left_node.node_content.indexOf(ps.alias_tablename+".") >= 0){
-				       ps.whereString=ps.whereString+rootnode.left_node.node_content+":"+rootnode.node_content+":0;";
+			} else {
+				// åªéœ€æ£€æŸ¥ä¸€ä¸‹å·¦å­©å­,å¹¶ä¸”è¿™ä¸ªåˆ—æ˜¯éè¿æ¥é”®
+				if (rootnode.left_node.node_content.indexOf(ps.alias_tablename + ".") >= 0) {
+					ps.whereString = ps.whereString + rootnode.left_node.node_content + ":" + rootnode.node_content + ":0;";
 				}
 			}
 		}
-		
+
 	}
 
-	//Ñ°ÕÒwhereStringµÄ½áÊøÎ»ÖÃ
-	public int FindWhereEndPostion(String sqlString)
-	{
-		if(sqlString==null || sqlString.length()==0)
-			return -1;
-		int min=sqlString.length();
-		int addr_order_by=sqlString.indexOf("order by");
-		int addr_group_by=sqlString.indexOf("group by");
-		int addr_limit=sqlString.indexOf(" limit ");
-		if(addr_order_by>0)
-		{
-			if(min > addr_order_by){
+	// å¯»æ‰¾whereStringçš„ç»“æŸä½ç½®
+	public int FindWhereEndPostion(String sqlString) {
+		if (sqlString == null || sqlString.length() == 0) return -1;
+		int min = sqlString.length();
+		int addr_order_by = sqlString.indexOf("order by");
+		int addr_group_by = sqlString.indexOf("group by");
+		int addr_limit = sqlString.indexOf(" limit ");
+		if (addr_order_by > 0) {
+			if (min > addr_order_by) {
 				min = addr_order_by;
 			}
 		}
-		if(addr_group_by>0)
-		{
-			if(min > addr_group_by){
+		if (addr_group_by > 0) {
+			if (min > addr_group_by) {
 				min = addr_group_by;
 			}
 		}
-		if(addr_limit>0)
-		{
-			if(min > addr_limit){
+		if (addr_limit > 0) {
+			if (min > addr_limit) {
 				min = addr_limit;
 			}
 		}
-		
+
 		return min;
 	}
-	
-	//°Ñgroup by columnsÕÒ³öÀ´
-	public int AnalyzeGroupByStr()
-	{
+
+	// æŠŠgroup by columnsæ‰¾å‡ºæ¥
+	public int AnalyzeGroupByStr() {
 		logger.debug("enter function AnalyzeGroupByStr");
-		String groupbyString="";
-		int addr_group_by=sql.indexOf("group by");
-		if(addr_group_by<0){
+		String groupbyString = "";
+		int addr_group_by = sql.indexOf("group by");
+		if (addr_group_by < 0) {
 			return 0;
 		}
-	
-		if(sql.indexOf("having", addr_group_by+8) > 0)
-		{
-			groupbyString=sql.substring(addr_group_by+8, sql.indexOf("having", addr_group_by+8)).trim();
+
+		if (sql.indexOf("having", addr_group_by + 8) > 0) {
+			groupbyString = sql.substring(addr_group_by + 8, sql.indexOf("having", addr_group_by + 8)).trim();
+		} else if (sql.indexOf("order by", addr_group_by + 8) > 0) {
+			groupbyString = sql.substring(addr_group_by + 8, sql.indexOf("order by", addr_group_by + 8)).trim();
+
+		} else if (sql.indexOf("limit", addr_group_by + 8) > 0) {
+			groupbyString = sql.substring(addr_group_by + 8, sql.indexOf("limit", addr_group_by + 8)).trim();
 		}
-		else if(sql.indexOf("order by", addr_group_by+8)>0)
-		{
-			groupbyString=sql.substring(addr_group_by+8, sql.indexOf("order by", addr_group_by+8)).trim();
-			
-		}
-		else if(sql.indexOf("limit",addr_group_by+8)>0){
-			groupbyString=sql.substring(addr_group_by+8, sql.indexOf("limit", addr_group_by+8)).trim();
-		}
-		
-		if(groupbyString.length()==0) {
-			errmsg="group by has syntax error.";
+
+		if (groupbyString.length() == 0) {
+			errmsg = "group by has syntax error.";
 			logger.warn(errmsg);
 			return -1;
 		}
-		
-		logger.debug("groupbycolumns:"+groupbyString);
-		String [] group_by_columns = groupbyString.split(",");
-		for(Iterator<ParseStruct> r=list_ParseStruct.iterator();r.hasNext();)
-		{
-			ParseStruct tmp_ps=r.next();
-			tmp_ps.groupbycolumn="";
-			for(int i=0;i<group_by_columns.length;i++)
-			{
-				if(group_by_columns[i].trim().indexOf(tmp_ps.alias_tablename+".")>=0){
-					//ÕÒµ½
-					if(tmp_ps.groupbycolumn.length()==0){
-					    tmp_ps.groupbycolumn=group_by_columns[i].trim();
-					}
-					else{
-						tmp_ps.groupbycolumn=tmp_ps.groupbycolumn+","+group_by_columns[i].trim();
+
+		logger.debug("groupbycolumns:" + groupbyString);
+		String[] group_by_columns = groupbyString.split(",");
+		for (Iterator<ParseStruct> r = list_ParseStruct.iterator(); r.hasNext();) {
+			ParseStruct tmp_ps = r.next();
+			tmp_ps.groupbycolumn = "";
+			for (int i = 0; i < group_by_columns.length; i++) {
+				if (group_by_columns[i].trim().indexOf(tmp_ps.alias_tablename + ".") >= 0) {
+					// æ‰¾åˆ°
+					if (tmp_ps.groupbycolumn.length() == 0) {
+						tmp_ps.groupbycolumn = group_by_columns[i].trim();
+					} else {
+						tmp_ps.groupbycolumn = tmp_ps.groupbycolumn + "," + group_by_columns[i].trim();
 					}
 				}
 			}
-			
-			tmp_ps.groupbycolumn=tmp_ps.groupbycolumn.replace(tmp_ps.alias_tablename+".", "");
-			logger.debug("table name:"+tmp_ps.tablename);
-			logger.debug("alias table name:"+tmp_ps.alias_tablename);
-			logger.debug("group by columns:"+tmp_ps.groupbycolumn);
+
+			tmp_ps.groupbycolumn = tmp_ps.groupbycolumn.replace(tmp_ps.alias_tablename + ".", "");
+			logger.debug("table name:" + tmp_ps.tablename);
+			logger.debug("alias table name:" + tmp_ps.alias_tablename);
+			logger.debug("group by columns:" + tmp_ps.groupbycolumn);
 		}
-		
+
 		return 0;
 	}
-	
-	//°Ñorder by columns×Ö¶ÎÕÒ³öÀ´
-	public int AnalyzeOrderByStr()
-	{
+
+	// æŠŠorder by columnså­—æ®µæ‰¾å‡ºæ¥
+	public int AnalyzeOrderByStr() {
 		logger.debug("enter function AnalyzeOrderByStr");
-		String orderbycolumns="";
-		int addr_order_by=sql.indexOf("order by");
-		if(addr_order_by<0) return 0;
-		
-		if(sql.indexOf(" limit ",addr_order_by) > addr_order_by)
-		{
-			orderbycolumns=sql.substring(addr_order_by+8, sql.indexOf(" limit ",addr_order_by));
+		String orderbycolumns = "";
+		int addr_order_by = sql.indexOf("order by");
+		if (addr_order_by < 0) return 0;
+
+		if (sql.indexOf(" limit ", addr_order_by) > addr_order_by) {
+			orderbycolumns = sql.substring(addr_order_by + 8, sql.indexOf(" limit ", addr_order_by));
+		} else {
+			// no limit key word
+			orderbycolumns = sql.substring(addr_order_by + 8).trim();
 		}
-		else {
-			//no limit key word
-			orderbycolumns=sql.substring(addr_order_by+8).trim();
-		}
-		
-		orderbycolumns=orderbycolumns.replace(" asc", " ");
-		orderbycolumns=orderbycolumns.replace(" desc", " ");
-		
-		logger.debug("orderbycolumns:"+orderbycolumns);
-		
-		String [] order_by_columns = orderbycolumns.split(",");
-		for(Iterator<ParseStruct> r=list_ParseStruct.iterator();r.hasNext();)
-		{
-			ParseStruct tmp_ps=r.next();
-			tmp_ps.orderbycolumn="";
-			for(int i=0;i<order_by_columns.length;i++)
-			{
-				if(order_by_columns[i].trim().indexOf(tmp_ps.alias_tablename+".")>=0){
-					//ÕÒµ½
-					if(tmp_ps.orderbycolumn.length()==0){
-					    tmp_ps.orderbycolumn=order_by_columns[i].trim();
-					}
-					else{
-						tmp_ps.orderbycolumn=tmp_ps.orderbycolumn+","+order_by_columns[i].trim();
+
+		orderbycolumns = orderbycolumns.replace(" asc", " ");
+		orderbycolumns = orderbycolumns.replace(" desc", " ");
+
+		logger.debug("orderbycolumns:" + orderbycolumns);
+
+		String[] order_by_columns = orderbycolumns.split(",");
+		for (Iterator<ParseStruct> r = list_ParseStruct.iterator(); r.hasNext();) {
+			ParseStruct tmp_ps = r.next();
+			tmp_ps.orderbycolumn = "";
+			for (int i = 0; i < order_by_columns.length; i++) {
+				if (order_by_columns[i].trim().indexOf(tmp_ps.alias_tablename + ".") >= 0) {
+					// æ‰¾åˆ°
+					if (tmp_ps.orderbycolumn.length() == 0) {
+						tmp_ps.orderbycolumn = order_by_columns[i].trim();
+					} else {
+						tmp_ps.orderbycolumn = tmp_ps.orderbycolumn + "," + order_by_columns[i].trim();
 					}
 				}
 			}
-			
-			tmp_ps.orderbycolumn=tmp_ps.orderbycolumn.replace(tmp_ps.alias_tablename+".", "");
-			logger.debug("table name:"+tmp_ps.tablename);
-			logger.debug("alias table name:"+tmp_ps.alias_tablename);
-			logger.debug("order by columns:"+tmp_ps.orderbycolumn);
+
+			tmp_ps.orderbycolumn = tmp_ps.orderbycolumn.replace(tmp_ps.alias_tablename + ".", "");
+			logger.debug("table name:" + tmp_ps.tablename);
+			logger.debug("alias table name:" + tmp_ps.alias_tablename);
+			logger.debug("order by columns:" + tmp_ps.orderbycolumn);
 		}
-		
+
 		return 0;
 	}
-	
-	//Íâ²¿Ö»ĞèÒªµ÷Õâ¸öº¯Êı,¾Í¿ÉÒÔ³õÊ¼»¯list_ParseStructÕâ¸ö½á¹¹Ìå
-	//ÒÔ¼°list_Table_RelationshipÕâ¸ö½á¹¹Ìå
-	public void ParseComplexSQL()
-	{
-		//¼ÆËãÈı¸ö¹Ø¼üÎ»ÖÃ
-		int addr_from=sql.indexOf(" from ");
-		int addr_where=sql.indexOf(" where ");
-		int where_end=FindWhereEndPostion(sql);
+
+	// å¤–éƒ¨åªéœ€è¦è°ƒè¿™ä¸ªå‡½æ•°,å°±å¯ä»¥åˆå§‹åŒ–list_ParseStructè¿™ä¸ªç»“æ„ä½“
+	// ä»¥åŠlist_Table_Relationshipè¿™ä¸ªç»“æ„ä½“
+	public void ParseComplexSQL() {
+		// è®¡ç®—ä¸‰ä¸ªå…³é”®ä½ç½®
+		int addr_from = sql.indexOf(" from ");
+		int addr_where = sql.indexOf(" where ");
+		int where_end = FindWhereEndPostion(sql);
 		logger.info("alanyze mutiple table join begin.");
-		//»ñµÃ±í,ÒÔ¼°±íµÄ±ğÃû
-		if(AnalyzeMutipleTable(sql.substring(addr_from+6, addr_where))<0){
+		// è·å¾—è¡¨,ä»¥åŠè¡¨çš„åˆ«å
+		if (AnalyzeMutipleTable(sql.substring(addr_from + 6, addr_where)) < 0) {
 			return;
 		}
-		//»ñµÃÃ¿¸ö±íµÄwhereÌõ¼ş
-		if(AnalyzeWhereStr(sql.substring(addr_where+7, where_end).trim())<0){
+		// è·å¾—æ¯ä¸ªè¡¨çš„whereæ¡ä»¶
+		if (AnalyzeWhereStr(sql.substring(addr_where + 7, where_end).trim()) < 0) {
 			return;
 		}
-		//»ñµÃÃ¿¸ö±íµÄgroup by columns
-		if(AnalyzeGroupByStr()<0){
+		// è·å¾—æ¯ä¸ªè¡¨çš„group by columns
+		if (AnalyzeGroupByStr() < 0) {
 			return;
 		}
-		//»ñµÃÃ¿¸ö±íµÄorder by columns
-		if(AnalyzeOrderByStr()<0){
+		// è·å¾—æ¯ä¸ªè¡¨çš„order by columns
+		if (AnalyzeOrderByStr() < 0) {
 			return;
 		}
 		logger.info("alanyze mutiple table join success.");

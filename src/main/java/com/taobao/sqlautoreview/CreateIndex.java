@@ -13,7 +13,6 @@
 
 package com.taobao.sqlautoreview;
 
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,1265 +24,1137 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-
 /*
  * function: create index for these sqls
  *          
  */
 
 public class CreateIndex {
-	//log4jÈÕÖ¾
+	// log4jæ—¥å¿—
 	private static Logger logger = Logger.getLogger(CreateIndex.class);
-	//SQL REVIEW DATABASE²Ù×÷¶ÔÏó
+	// SQL REVIEW DATABASEæ“ä½œå¯¹è±¡
 	IHandleDB wtb;
-	//ËùÓĞµÄSQLÉóºËÓï¾ä
+	// æ‰€æœ‰çš„SQLå®¡æ ¸è¯­å¥
 	List<SQL_Node> list_sql;
-	//ÔªÊı¾İÏà¹Ø¶ÔÏó
+	// å…ƒæ•°æ®ç›¸å…³å¯¹è±¡
 	IMetaData md;
-	//Ä¬ÈÏÔªÊı¾İ¹¹Ôì·½Ê½Îª0,Õâ¸ö²»ÓÃ¹¹ÔìÈ«¿âµÄÔªÊı¾İ
-	int metaDataBuildtype=0;
-	//´´½¨Ë÷Òı¹ı³ÌÖĞµÄ´íÎóºÍ½¨Òé
+	// é»˜è®¤å…ƒæ•°æ®æ„é€ æ–¹å¼ä¸º0,è¿™ä¸ªä¸ç”¨æ„é€ å…¨åº“çš„å…ƒæ•°æ®
+	int metaDataBuildtype = 0;
+	// åˆ›å»ºç´¢å¼•è¿‡ç¨‹ä¸­çš„é”™è¯¯å’Œå»ºè®®
 	String auto_review_error;
 	String auto_review_tip;
-	
-	//Ã¿¸öÌõ¼şÁĞµÄÊÆ´Ó´óµ½Ğ¡ÅÅĞò
-	class Column_Card
-	{
+
+	// æ¯ä¸ªæ¡ä»¶åˆ—çš„åŠ¿ä»å¤§åˆ°å°æ’åº
+	class Column_Card {
 		String column_name;
 		int Cardinality;
 		AnalyzeColumnStructure acs;
 	}
-	
-    //·ÖÎöµÄ»ù±¾½á¹¹
-    class AnalyzeColumnStructure
-    {
-    	String column_name; //ÁĞÃû
-    	String column_type; //ÁĞµÄÀàĞÍ
-    	int column_type_score; //ÀàĞÍµÃ·Ö
-    	String is_null_able;
-    	String symbol;   //ÔËËã·û
-    	int symbol_score; //ÔËËã·û·ÖÊı
-    	int Cardinality; //²»Í¬ÖµµÄ¸öÊı,ÕâÊÇÒ»¸ö³éÑùÖµ
-    	int Cardinality_score; //¼¯µÄÊÆµÄµÃ·Ö
-    	int total_score; //×Ü·Ö,Õâ¸öÓë×îºóÁĞÔÚË÷ÒıÖĞµÄÅÅĞòÖ±½ÓÏà¹Ø
-        int type; //select ×Ö¶Î 0,where×Ö¶Î1,group by×Ö¶Î2,order by×Ö¶Î3
-        boolean exist_index; //ÊÇ·ñÒÑÔÚË÷ÒıÁĞÀï
-        List<Index_Node> list_index;
-        boolean is_order_column; //ÊÇ·ñÊÇÅÅĞò×Ö¶Î
-        int is_join_key; //ÊÇ·ñÊÇÁ¬½Ó¼ü
-        
-        
-        public AnalyzeColumnStructure()
-        {
-        	is_order_column=false;
-        	column_type_score=0;
-        	symbol_score=0;
-        	Cardinality_score=0;
-        	total_score=0;
-        	is_join_key=0;
-        }
-    }
-    
-    //·ÖÎöµÄµ¥±í½á¹¹
-    class AnalyzeTableStructure
-    {
-    	String tablename;
-    	//·Ö¿â·Ö±í
-    	String real_tablename;
-    	List<AnalyzeColumnStructure> list;
-    	
-    	public  AnalyzeTableStructure(String tablename) {
-    		this.tablename=tablename;
-    		this.real_tablename=tablename;
+
+	// åˆ†æçš„åŸºæœ¬ç»“æ„
+	class AnalyzeColumnStructure {
+		String column_name; // åˆ—å
+		String column_type; // åˆ—çš„ç±»å‹
+		int column_type_score; // ç±»å‹å¾—åˆ†
+		String is_null_able;
+		String symbol; // è¿ç®—ç¬¦
+		int symbol_score; // è¿ç®—ç¬¦åˆ†æ•°
+		int Cardinality; // ä¸åŒå€¼çš„ä¸ªæ•°,è¿™æ˜¯ä¸€ä¸ªæŠ½æ ·å€¼
+		int Cardinality_score; // é›†çš„åŠ¿çš„å¾—åˆ†
+		int total_score; // æ€»åˆ†,è¿™ä¸ªä¸æœ€ååˆ—åœ¨ç´¢å¼•ä¸­çš„æ’åºç›´æ¥ç›¸å…³
+		int type; // select å­—æ®µ 0,whereå­—æ®µ1,group byå­—æ®µ2,order byå­—æ®µ3
+		boolean exist_index; // æ˜¯å¦å·²åœ¨ç´¢å¼•åˆ—é‡Œ
+		List<Index_Node> list_index;
+		boolean is_order_column; // æ˜¯å¦æ˜¯æ’åºå­—æ®µ
+		int is_join_key; // æ˜¯å¦æ˜¯è¿æ¥é”®
+
+		public AnalyzeColumnStructure() {
+			is_order_column = false;
+			column_type_score = 0;
+			symbol_score = 0;
+			Cardinality_score = 0;
+			total_score = 0;
+			is_join_key = 0;
+		}
+	}
+
+	// åˆ†æçš„å•è¡¨ç»“æ„
+	class AnalyzeTableStructure {
+		String tablename;
+		// åˆ†åº“åˆ†è¡¨
+		String real_tablename;
+		List<AnalyzeColumnStructure> list;
+
+		public AnalyzeTableStructure(String tablename) {
+			this.tablename = tablename;
+			this.real_tablename = tablename;
 			list = new LinkedList<AnalyzeColumnStructure>();
 		}
-    }
-    
-    //·ÖÎö¶à±íµÄ½á¹¹
-    class AnalyzeMTableStructure
-    {
-    	List<AnalyzeTableStructure> list;
-    	public AnalyzeMTableStructure()
-    	{
-    		list = new LinkedList<AnalyzeTableStructure>();
-    	}
-    }
-    
-    //¹¹Ôìº¯Êı
-	public CreateIndex()
-	{
-		this.wtb=new HandleSQLReviewDB();
+	}
+
+	// åˆ†æå¤šè¡¨çš„ç»“æ„
+	class AnalyzeMTableStructure {
+		List<AnalyzeTableStructure> list;
+
+		public AnalyzeMTableStructure() {
+			list = new LinkedList<AnalyzeTableStructure>();
+		}
+	}
+
+	// æ„é€ å‡½æ•°
+	public CreateIndex() {
+		this.wtb = new HandleSQLReviewDB();
 		this.md = new MySQLMetaData();
 	}
-	
-	//Ç°¶Ëµ÷ÓÃµÄ¹¹Ôìº¯Êı
-	public CreateIndex(String IP,int port,String dbname,String user,String password,IHandleDB ihandleSQLReviewDB){
-		this.md = new MySQLMetaData(IP,port,dbname,user,password);
-		this.wtb=ihandleSQLReviewDB;
+
+	// å‰ç«¯è°ƒç”¨çš„æ„é€ å‡½æ•°
+	public CreateIndex(String IP, int port, String dbname, String user, String password, IHandleDB ihandleSQLReviewDB) {
+		this.md = new MySQLMetaData(IP, port, dbname, user, password);
+		this.wtb = ihandleSQLReviewDB;
 	}
-	
-	//»ñµÃËùÓĞµÄSQL
-	public void getAllSQL() throws SQLException
-	{
-		list_sql=wtb.getAllSQL();
+
+	// è·å¾—æ‰€æœ‰çš„SQL
+	public void getAllSQL() throws SQLException {
+		list_sql = wtb.getAllSQL();
 	}
-	//»ñµÃËùÓĞµÄSQL
-	public void getAllSQL(int sqlmapFileID) throws SQLException
-	{
-		list_sql=wtb.getAllSQL(sqlmapFileID);
+
+	// è·å¾—æ‰€æœ‰çš„SQL
+	public void getAllSQL(int sqlmapFileID) throws SQLException {
+		list_sql = wtb.getAllSQL(sqlmapFileID);
 	}
-	
-	//»ñµÃÕâ¸ö¿âµÄÔªÊı¾İ
-	public void getMetaData()
-	{
-	    md.buildDBMetaData();
+
+	// è·å¾—è¿™ä¸ªåº“çš„å…ƒæ•°æ®
+	public void getMetaData() {
+		md.buildDBMetaData();
 	}
-	
-	//·ÖÎöÃ¿Ò»¸öSQL
-	public void reviewSQL()
-	{
+
+	// åˆ†ææ¯ä¸€ä¸ªSQL
+	public void reviewSQL() {
 		String sql;
 		int sql_id;
-		String tablenames="";
-		if(metaDataBuildtype != 0)
-		{
-			//Ò»´ÎĞÔÈ«¿â¹¹ÔìÔªÊı¾İ
+		String tablenames = "";
+		if (metaDataBuildtype != 0) {
+			// ä¸€æ¬¡æ€§å…¨åº“æ„é€ å…ƒæ•°æ®
 			getMetaData();
 		}
-		
-		for(Iterator<SQL_Node> r=list_sql.iterator();r.hasNext();)
-    	{
-			auto_review_error="";
-			auto_review_tip="";
-			tablenames="";
-			SQL_Node sql_node= r.next();
-    		sql = sql_node.sqlString;
-    		sql_id =  sql_node.id;
-    		logger.info("´ıÉóºËµÄSQL_ID="+sql_id+",Ô­Ê¼SQL TEXTÎª:"+sql);
-    		ParseSQL ps = new ParseSQL(sql);
-    		ps.sql_dispatch();
-    		//¼ì²ésql parseµÄ½á¹û
-    		auto_review_tip=ps.tip;
-    		if(checkParseResult(ps.errmsg,ps.sql_type,sql_id)==false){
-    			continue;
-    		}
-    		
-    		if(ps.tag==0)
-    		{
-    			    tablenames=ps.tablename;
-    			    //µ¥±íÌî³åÔªÊı¾İ
-    			    if(fillTableMetaData(ps.tablename,sql_id)==false){
-    			    	continue;
-    			    }
-		    		AnalyzeTableStructure ats = new AnalyzeTableStructure(ps.tablename);
-		    		modifyAtsRealTablename(ats,ps.tablename);
-		    		try {
-		    			//½«Êı¾İ´ÓwhereÊ÷ÖĞÌîÈëµ½atsÖĞ
-		        		LoadWhereDataToACS(ps.whereNode,ats);
-		        		if(auto_review_error.length()>0){
-		        			wtb.updateSQLStatus(2,"", sql_id,auto_review_error,auto_review_tip,tablenames);
-		        			continue;
-		        		}
-		        		//µ±Ç°ÊÇ°Ñgroup byÓëorder by columnÒ»Æğµ±×öÅÅ×Ö¶ÎÀ´´¦Àí
-		        		String orderString=contactGroupbyOrderby(ps.groupbycolumn,ps.orderbycolumn);
-		        		//½«ÅÅĞò×Ö¶ÎÔªÊı¾İ×°ÔØats
-		        		LoadOrderDataToACS(orderString,ats,ps.map_columns);
-		        		if(auto_review_error.length()>0){
-		        			wtb.updateSQLStatus(2,"", sql_id,auto_review_error,auto_review_tip,tablenames);
-		        			continue;
-		        		}
-		        		//¼ì²éÅÅĞò×Ö¶ÎµÄ³¤¶È
-		        		auto_review_tip=checkOrderByColumnsLength(orderString,ats);
-		        		//¼ÆËã×îÓÅË÷Òı
-		        		String createindexString=ComputeBestIndex(ats);
-		        		//½«ÕâÌõSQLµÄÉóºË½á¹û±£´æµ½Êı¾İ¿âÖĞ
-		        		wtb.updateSQLStatus(1, createindexString, sql_id,auto_review_error,auto_review_tip,tablenames);
-					} catch (Exception e) {
-						logger.error("the process of creating index has some errors:", e);
+
+		for (Iterator<SQL_Node> r = list_sql.iterator(); r.hasNext();) {
+			auto_review_error = "";
+			auto_review_tip = "";
+			tablenames = "";
+			SQL_Node sql_node = r.next();
+			sql = sql_node.sqlString;
+			sql_id = sql_node.id;
+			logger.info("å¾…å®¡æ ¸çš„SQL_ID=" + sql_id + ",åŸå§‹SQL TEXTä¸º:" + sql);
+			ParseSQL ps = new ParseSQL(sql);
+			ps.sql_dispatch();
+			// æ£€æŸ¥sql parseçš„ç»“æœ
+			auto_review_tip = ps.tip;
+			if (checkParseResult(ps.errmsg, ps.sql_type, sql_id) == false) {
+				continue;
+			}
+
+			if (ps.tag == 0) {
+				tablenames = ps.tablename;
+				// å•è¡¨å¡«å†²å…ƒæ•°æ®
+				if (fillTableMetaData(ps.tablename, sql_id) == false) {
+					continue;
+				}
+				AnalyzeTableStructure ats = new AnalyzeTableStructure(ps.tablename);
+				modifyAtsRealTablename(ats, ps.tablename);
+				try {
+					// å°†æ•°æ®ä»whereæ ‘ä¸­å¡«å…¥åˆ°atsä¸­
+					LoadWhereDataToACS(ps.whereNode, ats);
+					if (auto_review_error.length() > 0) {
+						wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip, tablenames);
+						continue;
 					}
-    		}else if(ps.tag==1 && ps.sql_type==3){
-    			//¶à±íselectÓï¾äµÄparse
-    			boolean find_all_table_metadata=true;
-    			ParseMutiTableSQL pmts = new ParseMutiTableSQL(sql);
-    			pmts.ParseComplexSQL();
-    			//´íÎó¼ì²é
-    			auto_review_error=pmts.errmsg;
-    			if(auto_review_error.length()>0){
-    				wtb.updateSQLStatus(2, "", sql_id,auto_review_error,auto_review_tip);
-    				logger.warn("current sql:"+sql+" parse has some errors:"+auto_review_error);
-    				continue;
-    			}
-    			
-    			//»ñµÃËùÓĞ±íÃû
-    			for(Iterator<ParseStruct> iter=pmts.list_ParseStruct.iterator();iter.hasNext();)
-    			{
-    				if(tablenames.equals("")==true){
-    					tablenames=iter.next().tablename;
-    				}else {
-						tablenames=tablenames+","+iter.next().tablename;
+					// å½“å‰æ˜¯æŠŠgroup byä¸order by columnä¸€èµ·å½“åšæ’å­—æ®µæ¥å¤„ç†
+					String orderString = contactGroupbyOrderby(ps.groupbycolumn, ps.orderbycolumn);
+					// å°†æ’åºå­—æ®µå…ƒæ•°æ®è£…è½½ats
+					LoadOrderDataToACS(orderString, ats, ps.map_columns);
+					if (auto_review_error.length() > 0) {
+						wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip, tablenames);
+						continue;
 					}
-    			}
-    			
-    			//»ñµÃÕâÌõSQLËùÉæ¼°µÄ±íµÄËùÓĞÔªÊı¾İ
-    			for(Iterator<ParseStruct> iter=pmts.list_ParseStruct.iterator();iter.hasNext();)
-    			{
-    				ParseStruct tmp_ps=iter.next();
-    			    if(fillTableMetaData(tmp_ps.tablename,sql_id)==false){
-    			    	find_all_table_metadata=false;
-    			    	break;
-    			    }
-    				
-    			}
-    			if(find_all_table_metadata==false){
-    				continue;
-    			}
-    			
-    			//ÉùÃ÷µ¥ÌõSQL¶à±íÏà¹ØÔªÊı¾İ±£´æ¶ÔÏó
-    			AnalyzeMTableStructure amts=new AnalyzeMTableStructure();
-    			String createindexString2="";
-    			for(Iterator<ParseStruct> iter2=pmts.list_ParseStruct.iterator();iter2.hasNext();)
-    			{
-    				ParseStruct tmp_ps2=iter2.next();
-    				AnalyzeTableStructure tmp_ats=new AnalyzeTableStructure(tmp_ps2.tablename);
-    				modifyAtsRealTablename(tmp_ats,tmp_ps2.tablename);
-    				LoadWhereDataToACS(tmp_ps2.whereString,tmp_ats);
-    				if(auto_review_error.length()>0){
-	        			wtb.updateSQLStatus(2,"", sql_id,auto_review_error,auto_review_tip,tablenames);
-	        			continue;
-	        		}
-    				//µ±Ç°ÊÇ°Ñgroup byÓëorder by columnÒ»Æğµ±×öÅÅ×Ö¶ÎÀ´´¦Àí
-	        		String orderString2=contactGroupbyOrderby(tmp_ps2.groupbycolumn,tmp_ps2.orderbycolumn);
-	        		//½«ÅÅĞò×Ö¶ÎÔªÊı¾İ×°ÔØtmp_ats
-	        		LoadOrderDataToACS(orderString2,tmp_ats,null);
-	        		if(auto_review_error.length()>0){
-	        			wtb.updateSQLStatus(2,"", sql_id,auto_review_error,auto_review_tip,tablenames);
-	        			continue;
-	        		}
-	        		//¼ì²éÅÅĞò×Ö¶ÎµÄ³¤¶È
-	        		String checkorderby=checkOrderByColumnsLength(orderString2,tmp_ats);
-	        		if(checkorderby.length()>0){
-	        			auto_review_tip=checkorderby;
-	        		}
-	        		//Ìí¼Ó½øÁ´±í
-	        		amts.list.add(tmp_ats);
-    			}
-    			
-    			//¼ÆËãÇı¶¯±í
-    			ComputeDriverTable(amts, pmts.list_Table_Relationship);
-    			//¼ÆËãÃ¿¸ö±íµÄ×îÓÅË÷Òı
-    			for(int i=0;i<pmts.list_Table_Relationship.size();i++)
-    			{
-    				AnalyzeTableStructure ats3=getATSByTablename(amts, pmts.list_Table_Relationship.get(i).tablename);
-    				String tmp_best_index=ComputeBestIndex(ats3,pmts.list_Table_Relationship.get(i));
-    				//Æ´½ÓcreateindexString2
-	        		if(createindexString2.length()==0){
-	        			createindexString2=tmp_best_index;
-	        		}else {
-	        			createindexString2=createindexString2+tmp_best_index;
-	        		}
-    			}
-    			
-    			logger.info("muti-table sql all index:"+createindexString2);
-    			//½«ÕâÌõSQLµÄÉóºË½á¹û±£´æµ½Êı¾İ¿âÖĞ
-        		wtb.updateSQLStatus(1, createindexString2, sql_id,auto_review_error,auto_review_tip,tablenames);
-    			
-    		}
-    	}//end for
+					// æ£€æŸ¥æ’åºå­—æ®µçš„é•¿åº¦
+					auto_review_tip = checkOrderByColumnsLength(orderString, ats);
+					// è®¡ç®—æœ€ä¼˜ç´¢å¼•
+					String createindexString = ComputeBestIndex(ats);
+					// å°†è¿™æ¡SQLçš„å®¡æ ¸ç»“æœä¿å­˜åˆ°æ•°æ®åº“ä¸­
+					wtb.updateSQLStatus(1, createindexString, sql_id, auto_review_error, auto_review_tip, tablenames);
+				} catch (Exception e) {
+					logger.error("the process of creating index has some errors:", e);
+				}
+			} else if (ps.tag == 1 && ps.sql_type == 3) {
+				// å¤šè¡¨selectè¯­å¥çš„parse
+				boolean find_all_table_metadata = true;
+				ParseMutiTableSQL pmts = new ParseMutiTableSQL(sql);
+				pmts.ParseComplexSQL();
+				// é”™è¯¯æ£€æŸ¥
+				auto_review_error = pmts.errmsg;
+				if (auto_review_error.length() > 0) {
+					wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip);
+					logger.warn("current sql:" + sql + " parse has some errors:" + auto_review_error);
+					continue;
+				}
+
+				// è·å¾—æ‰€æœ‰è¡¨å
+				for (Iterator<ParseStruct> iter = pmts.list_ParseStruct.iterator(); iter.hasNext();) {
+					if (tablenames.equals("") == true) {
+						tablenames = iter.next().tablename;
+					} else {
+						tablenames = tablenames + "," + iter.next().tablename;
+					}
+				}
+
+				// è·å¾—è¿™æ¡SQLæ‰€æ¶‰åŠçš„è¡¨çš„æ‰€æœ‰å…ƒæ•°æ®
+				for (Iterator<ParseStruct> iter = pmts.list_ParseStruct.iterator(); iter.hasNext();) {
+					ParseStruct tmp_ps = iter.next();
+					if (fillTableMetaData(tmp_ps.tablename, sql_id) == false) {
+						find_all_table_metadata = false;
+						break;
+					}
+
+				}
+				if (find_all_table_metadata == false) {
+					continue;
+				}
+
+				// å£°æ˜å•æ¡SQLå¤šè¡¨ç›¸å…³å…ƒæ•°æ®ä¿å­˜å¯¹è±¡
+				AnalyzeMTableStructure amts = new AnalyzeMTableStructure();
+				String createindexString2 = "";
+				for (Iterator<ParseStruct> iter2 = pmts.list_ParseStruct.iterator(); iter2.hasNext();) {
+					ParseStruct tmp_ps2 = iter2.next();
+					AnalyzeTableStructure tmp_ats = new AnalyzeTableStructure(tmp_ps2.tablename);
+					modifyAtsRealTablename(tmp_ats, tmp_ps2.tablename);
+					LoadWhereDataToACS(tmp_ps2.whereString, tmp_ats);
+					if (auto_review_error.length() > 0) {
+						wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip, tablenames);
+						continue;
+					}
+					// å½“å‰æ˜¯æŠŠgroup byä¸order by columnä¸€èµ·å½“åšæ’å­—æ®µæ¥å¤„ç†
+					String orderString2 = contactGroupbyOrderby(tmp_ps2.groupbycolumn, tmp_ps2.orderbycolumn);
+					// å°†æ’åºå­—æ®µå…ƒæ•°æ®è£…è½½tmp_ats
+					LoadOrderDataToACS(orderString2, tmp_ats, null);
+					if (auto_review_error.length() > 0) {
+						wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip, tablenames);
+						continue;
+					}
+					// æ£€æŸ¥æ’åºå­—æ®µçš„é•¿åº¦
+					String checkorderby = checkOrderByColumnsLength(orderString2, tmp_ats);
+					if (checkorderby.length() > 0) {
+						auto_review_tip = checkorderby;
+					}
+					// æ·»åŠ è¿›é“¾è¡¨
+					amts.list.add(tmp_ats);
+				}
+
+				// è®¡ç®—é©±åŠ¨è¡¨
+				ComputeDriverTable(amts, pmts.list_Table_Relationship);
+				// è®¡ç®—æ¯ä¸ªè¡¨çš„æœ€ä¼˜ç´¢å¼•
+				for (int i = 0; i < pmts.list_Table_Relationship.size(); i++) {
+					AnalyzeTableStructure ats3 = getATSByTablename(amts, pmts.list_Table_Relationship.get(i).tablename);
+					String tmp_best_index = ComputeBestIndex(ats3, pmts.list_Table_Relationship.get(i));
+					// æ‹¼æ¥createindexString2
+					if (createindexString2.length() == 0) {
+						createindexString2 = tmp_best_index;
+					} else {
+						createindexString2 = createindexString2 + tmp_best_index;
+					}
+				}
+
+				logger.info("muti-table sql all index:" + createindexString2);
+				// å°†è¿™æ¡SQLçš„å®¡æ ¸ç»“æœä¿å­˜åˆ°æ•°æ®åº“ä¸­
+				wtb.updateSQLStatus(1, createindexString2, sql_id, auto_review_error, auto_review_tip, tablenames);
+
+			}
+		} // end for
 	}
-	
-    /*
-     * ·Ö¿â·Ö±íµÄÇé¿öÏÂ,ĞèÒªĞŞ¸ÄatsÖĞµÄreal_tablename±äÁ¿µÄÖµ
-     */
-	private void modifyAtsRealTablename(AnalyzeTableStructure ats,
-			String tablename) 
-	{
-		String real_tablename=md.findMatchTable(tablename);
-		if(real_tablename != null && real_tablename.equals(tablename)==false){
-			ats.real_tablename=real_tablename;
+
+	/*
+	 * åˆ†åº“åˆ†è¡¨çš„æƒ…å†µä¸‹,éœ€è¦ä¿®æ”¹atsä¸­çš„real_tablenameå˜é‡çš„å€¼
+	 */
+	private void modifyAtsRealTablename(AnalyzeTableStructure ats, String tablename) {
+		String real_tablename = md.findMatchTable(tablename);
+		if (real_tablename != null && real_tablename.equals(tablename) == false) {
+			ats.real_tablename = real_tablename;
 		}
 	}
 
 	/*
-	 * ¼ÆËãÇı¶¯±í,Ö§³ÖÁ½±í¼°Á½±íÒÔÉÏ
-	 * 
+	 * è®¡ç®—é©±åŠ¨è¡¨,æ”¯æŒä¸¤è¡¨åŠä¸¤è¡¨ä»¥ä¸Š
 	 */
-	private int ComputeDriverTable(AnalyzeMTableStructure amts,List<Table_Relationship> list_table_relationship) 
-	{
-		//³¤¶ÈÒ»ÖÂĞÔ¼ì²é
-		int amts_size=amts.list.size();
-		int list_table_relationship_size=list_table_relationship.size();
-		if(amts_size != list_table_relationship_size){
+	private int ComputeDriverTable(AnalyzeMTableStructure amts, List<Table_Relationship> list_table_relationship) {
+		// é•¿åº¦ä¸€è‡´æ€§æ£€æŸ¥
+		int amts_size = amts.list.size();
+		int list_table_relationship_size = list_table_relationship.size();
+		if (amts_size != list_table_relationship_size) {
 			logger.warn("AnalyzeMTableStructure ,List<Table_Relationship> list size() has some difference.");
 			return -1;
 		}
-		if(list_table_relationship_size<2){
+		if (list_table_relationship_size < 2) {
 			logger.warn("list_table_relationship list size less than 2.");
 			return -1;
 		}
-		
-		//¼ÆËãlist_table_relationship listÍ·ºÍÎ²µÄTableµÄcard,ÖĞ¼äµÄ±í²»ĞèÒª¼ÆËãCard
-		AnalyzeTableStructure ats_head=getATSByTablename(amts,list_table_relationship.get(0).tablename);
-		AnalyzeTableStructure ats_tail=getATSByTablename(amts,list_table_relationship.get(list_table_relationship_size-1).tablename);
-		ComputeTableCard(ats_head,list_table_relationship.get(0));
-		ComputeTableCard(ats_tail,list_table_relationship.get(list_table_relationship_size-1));
-		logger.debug("list_table_relationship first tablename "+list_table_relationship.get(0).tablename+" table Card:"+list_table_relationship.get(0).Cardinality);
-		logger.debug("list_table_relationship last tablename "+list_table_relationship.get(list_table_relationship_size-1).tablename+" table Card:"+list_table_relationship.get(list_table_relationship_size-1).Cardinality);
-		if(list_table_relationship.get(0).Cardinality < list_table_relationship.get(list_table_relationship_size-1).Cardinality)
-		{
-			//½«list_table_relationshipÖĞµÄË³Ğò·´Ò»ÏÂ,ÅÅÔÚµÚÒ»¸öÎ»ÖÃµÄÎÒÃÇÈÏÎªÊÇÕû¸öSQLµÄÇı¶¯±í
-	        reverseListTableRelationship(list_table_relationship);
-	        logger.debug("reverse list_table_relationship list.Result is as follows:");
-	        logger.debug("list_table_relationship first tablename "+list_table_relationship.get(0).tablename+" table Card:"+list_table_relationship.get(0).Cardinality);
-			logger.debug("list_table_relationship last tablename "+list_table_relationship.get(list_table_relationship_size-1).tablename+" table Card:"+list_table_relationship.get(list_table_relationship_size-1).Cardinality);
-	        
-		}else{
+
+		// è®¡ç®—list_table_relationship listå¤´å’Œå°¾çš„Tableçš„card,ä¸­é—´çš„è¡¨ä¸éœ€è¦è®¡ç®—Card
+		AnalyzeTableStructure ats_head = getATSByTablename(amts, list_table_relationship.get(0).tablename);
+		AnalyzeTableStructure ats_tail = getATSByTablename(amts,
+				list_table_relationship.get(list_table_relationship_size - 1).tablename);
+		ComputeTableCard(ats_head, list_table_relationship.get(0));
+		ComputeTableCard(ats_tail, list_table_relationship.get(list_table_relationship_size - 1));
+		logger.debug("list_table_relationship first tablename " + list_table_relationship.get(0).tablename + " table Card:"
+				+ list_table_relationship.get(0).Cardinality);
+		logger.debug(
+				"list_table_relationship last tablename " + list_table_relationship.get(list_table_relationship_size - 1).tablename
+						+ " table Card:" + list_table_relationship.get(list_table_relationship_size - 1).Cardinality);
+		if (list_table_relationship.get(0).Cardinality < list_table_relationship.get(list_table_relationship_size - 1).Cardinality) {
+			// å°†list_table_relationshipä¸­çš„é¡ºåºåä¸€ä¸‹,æ’åœ¨ç¬¬ä¸€ä¸ªä½ç½®çš„æˆ‘ä»¬è®¤ä¸ºæ˜¯æ•´ä¸ªSQLçš„é©±åŠ¨è¡¨
+			reverseListTableRelationship(list_table_relationship);
+			logger.debug("reverse list_table_relationship list.Result is as follows:");
+			logger.debug("list_table_relationship first tablename " + list_table_relationship.get(0).tablename + " table Card:"
+					+ list_table_relationship.get(0).Cardinality);
+			logger.debug(
+					"list_table_relationship last tablename " + list_table_relationship.get(list_table_relationship_size - 1).tablename
+							+ " table Card:" + list_table_relationship.get(list_table_relationship_size - 1).Cardinality);
+
+		} else {
 			logger.debug("no need to reverse list_table_relationship list.");
 		}
 		return 0;
 	}
-	
+
 	/*
-	 * ½«Á´±í·´×ª
+	 * å°†é“¾è¡¨åè½¬
 	 */
-	private void reverseListTableRelationship(List<Table_Relationship> list_table_relationship) 
-	{	
-		//ÉùÃ÷Ò»¸öÁÙÊ±Á´±í
-		List<Table_Relationship> tmpList=new LinkedList<Table_Relationship>();
-		//½«Ô­Á´±íÖĞµÄËùÓĞÊı¾İ,ÏÈ±£´æµ½ÁíÍâÒ»¸öÁ´±íÖĞ
-		for(int i=list_table_relationship.size()-1;i>=0;i--)
-		{
+	private void reverseListTableRelationship(List<Table_Relationship> list_table_relationship) {
+		// å£°æ˜ä¸€ä¸ªä¸´æ—¶é“¾è¡¨
+		List<Table_Relationship> tmpList = new LinkedList<Table_Relationship>();
+		// å°†åŸé“¾è¡¨ä¸­çš„æ‰€æœ‰æ•°æ®,å…ˆä¿å­˜åˆ°å¦å¤–ä¸€ä¸ªé“¾è¡¨ä¸­
+		for (int i = list_table_relationship.size() - 1; i >= 0; i--) {
 			tmpList.add(list_table_relationship.get(i));
 			list_table_relationship.remove(i);
 		}
-		
-		//·´×ªÁ¬½Ó¼ü,²¢°ÑelementÖØĞÂÌí¼Ó½øÁ´±íÀïÃæ
-		for(int j=0;j<tmpList.size();j++)
-		{
-			String tmp_col=tmpList.get(j).columnname1;
-			tmpList.get(j).columnname1=tmpList.get(j).columnname2;
-			tmpList.get(j).columnname2=tmp_col;
+
+		// åè½¬è¿æ¥é”®,å¹¶æŠŠelementé‡æ–°æ·»åŠ è¿›é“¾è¡¨é‡Œé¢
+		for (int j = 0; j < tmpList.size(); j++) {
+			String tmp_col = tmpList.get(j).columnname1;
+			tmpList.get(j).columnname1 = tmpList.get(j).columnname2;
+			tmpList.get(j).columnname2 = tmp_col;
 			list_table_relationship.add(tmpList.get(j));
 		}
 	}
 
 	/*
-	 * Í¨¹ı±íÃû,À´ÕÒ¶ÔÓ¦µÄAnalyzeTableStructure
+	 * é€šè¿‡è¡¨å,æ¥æ‰¾å¯¹åº”çš„AnalyzeTableStructure
 	 */
-	private AnalyzeTableStructure getATSByTablename(AnalyzeMTableStructure amts,String tablename) 
-	{
-		boolean is_find=false;
+	private AnalyzeTableStructure getATSByTablename(AnalyzeMTableStructure amts, String tablename) {
+		boolean is_find = false;
 		AnalyzeTableStructure ats = null;
-		for(Iterator<AnalyzeTableStructure> iterator=amts.list.iterator();iterator.hasNext();)
-		{
-			ats=iterator.next();
-			if(ats.tablename.equals(tablename)==true)
-			{
-				is_find=true;
+		for (Iterator<AnalyzeTableStructure> iterator = amts.list.iterator(); iterator.hasNext();) {
+			ats = iterator.next();
+			if (ats.tablename.equals(tablename) == true) {
+				is_find = true;
 				break;
 			}
 		}
-		
-		if(is_find){
+
+		if (is_find) {
 			return ats;
-		}else {
-			logger.warn("can't find AnalyzeTableStructure by tablename:"+tablename);
+		} else {
+			logger.warn("can't find AnalyzeTableStructure by tablename:" + tablename);
 			return null;
 		}
 	}
 
 	/*
-	 * ¼ÆËãÒ»¸ö±íµÄCardinality
+	 * è®¡ç®—ä¸€ä¸ªè¡¨çš„Cardinality
 	 */
-	private int ComputeTableCard(AnalyzeTableStructure ats,Table_Relationship tRelationship) 
-	{
-		int card=1;
-		boolean zero=true;
-		String join_columnString="";
-		int list_size=ats.list.size();
-		
-		if(ats.tablename.equals(tRelationship.tablename)==false){
-			logger.error("ComputeTableCardÖĞatsÓëtRelationship±íÃû²»Ò»ÖÂ.");
+	private int ComputeTableCard(AnalyzeTableStructure ats, Table_Relationship tRelationship) {
+		int card = 1;
+		boolean zero = true;
+		String join_columnString = "";
+		int list_size = ats.list.size();
+
+		if (ats.tablename.equals(tRelationship.tablename) == false) {
+			logger.error("ComputeTableCardä¸­atsä¸tRelationshipè¡¨åä¸ä¸€è‡´.");
 			return -1;
 		}
-		
-		for(int i=0;i<list_size;i++)
-		{
-			AnalyzeColumnStructure acs=ats.list.get(i);
-			if(acs.is_join_key==0)
-			{
-				//²»¼ÆËãÅÅĞò×Ö¶ÎµÄCardinality
-				if(acs.is_order_column==false)
-				{
-					if(acs.symbol.equals("=")==true){
-						zero=false;
-						card=card*acs.Cardinality;
-					}else if(acs.symbol.equals(">")==true){
-						zero=false;
-						card=card*acs.Cardinality;
-					}else if(acs.symbol.equals(">=")==true){
-						zero=false;
-						card=card*acs.Cardinality;
-					}else if(acs.symbol.equals("<")==true){
-						zero=false;
-						card=card*acs.Cardinality;
-					}else if(acs.symbol.equals("<=")==true){
-						zero=false;
-						card=card*acs.Cardinality;
-					}else if(acs.symbol.equals("in")==true){
-						zero=false;
-						card=card*acs.Cardinality;
+
+		for (int i = 0; i < list_size; i++) {
+			AnalyzeColumnStructure acs = ats.list.get(i);
+			if (acs.is_join_key == 0) {
+				// ä¸è®¡ç®—æ’åºå­—æ®µçš„Cardinality
+				if (acs.is_order_column == false) {
+					if (acs.symbol.equals("=") == true) {
+						zero = false;
+						card = card * acs.Cardinality;
+					} else if (acs.symbol.equals(">") == true) {
+						zero = false;
+						card = card * acs.Cardinality;
+					} else if (acs.symbol.equals(">=") == true) {
+						zero = false;
+						card = card * acs.Cardinality;
+					} else if (acs.symbol.equals("<") == true) {
+						zero = false;
+						card = card * acs.Cardinality;
+					} else if (acs.symbol.equals("<=") == true) {
+						zero = false;
+						card = card * acs.Cardinality;
+					} else if (acs.symbol.equals("in") == true) {
+						zero = false;
+						card = card * acs.Cardinality;
 					}
 				}
-			}
-			else {
-				if(join_columnString.length()>0){
-					logger.error("table "+ats.tablename+" has two or more join columns.");
+			} else {
+				if (join_columnString.length() > 0) {
+					logger.error("table " + ats.tablename + " has two or more join columns.");
 					return -1;
-				}else{
-				     join_columnString=acs.column_name;
+				} else {
+					join_columnString = acs.column_name;
 				}
 			}
 		}
-		//¶ÔÓÚĞÂÏîÄ¿µÄ±í,ºÜÈİÒ×³öÏÖ´ËÇé¿ö,ÕâÖÖ»áµ¼ÖÂ¼ÆËãÇı¶¯±í²»×¼È·
-		if(card==0){
-			logger.warn("table "+ats.tablename+"has no data. cardinality is 0.");
+		// å¯¹äºæ–°é¡¹ç›®çš„è¡¨,å¾ˆå®¹æ˜“å‡ºç°æ­¤æƒ…å†µ,è¿™ç§ä¼šå¯¼è‡´è®¡ç®—é©±åŠ¨è¡¨ä¸å‡†ç¡®
+		if (card == 0) {
+			logger.warn("table " + ats.tablename + "has no data. cardinality is 0.");
 		}
-		
-		//³ıÁ¬½Ó¼üÍâ,Ã»ÓĞÈÎºÎÌõ¼şµÄCardinality
-		if(zero){
-			card=0;
+
+		// é™¤è¿æ¥é”®å¤–,æ²¡æœ‰ä»»ä½•æ¡ä»¶çš„Cardinality
+		if (zero) {
+			card = 0;
 		}
-		
-		tRelationship.Cardinality=card;
-		
-		//ÕıÈ··µ»Ø
+
+		tRelationship.Cardinality = card;
+
+		// æ­£ç¡®è¿”å›
 		return 0;
 	}
 
-	//×°ÔØ¶à±íwhere stringµÄÔªÊı¾İ
-	//whereStringÊı¾İ¸ñÊ½column_name:operator:is_join_key;column_name:operator:is_join_key
-	private void LoadWhereDataToACS(String whereString,AnalyzeTableStructure ats) 
-	{
-		String [] Columns=whereString.split(";");
-		for(int i=0;i<Columns.length;i++)
-		{
-			    String column_name=Columns[i].substring(0, Columns[i].indexOf(":"));
-			    String operator=Columns[i].substring(Columns[i].indexOf(":")+1,Columns[i].lastIndexOf(":"));
-			    int is_join_key=Integer.valueOf(Columns[i].substring(Columns[i].lastIndexOf(":")+1));
-				AnalyzeColumnStructure acs = new AnalyzeColumnStructure();
-				acs.symbol=operator;
-				//¼ÆËã²Ù×÷·û·ÖÖµ,µÈºÅ·ÖÖµ×î¸ß,Õâ¸ö·ÖÖµÔİÊ±Ã»ÓĞÓÃ
-				if(acs.symbol.equals("="))
-					acs.symbol_score = 10;
-				else {
-					acs.symbol_score = 5;
-				}
-				acs.column_name=column_name;
-				//²éÕÒÕâÒ»ÁĞµÄÔªÊı¾İ
-				Column_Node cn=md.searchColumnMetaData(ats.tablename, acs.column_name);
-				if(cn==null){
-					auto_review_error="Table:"+ats.tablename+" Column:"+acs.column_name+" does not exist.";
-					logger.warn(auto_review_error);
-					return;
-				}
-				//²éÕÒÕâ¸öÁĞËùÔÚµÄË÷ÒıÔªÊı¾İ
-				acs.list_index = md.searchIndexMetaData(ats.tablename, acs.column_name);
-				acs.column_type=cn.column_type;
-				//·ÖÖµÔİÊ±Ã»ÓĞÓÃ
-				acs.column_type_score=100;
-				acs.is_null_able=cn.is_nullable;
-				acs.Cardinality=cn.sample_card;
-				//·ÖÖµÔİÊ±Ã»ÓĞÓÃ
-				acs.Cardinality_score=100;
-				if(acs.list_index.isEmpty()==true)
-					acs.exist_index=false;
-				else {
-					acs.exist_index=true;
-				}
-				acs.type=1;
-				//±êÊ¾Á¬½Ó¼ü
-				if(is_join_key==1){
-					acs.is_join_key=1;
-				}
-				
-				//½«ÁĞµÄËùÓĞĞÅÏ¢Ìí¼Óµ½tableÖĞ,×¼±¸ºóĞøµÄ¼ÆËãÊ¹ÓÃ
-				if(!checkExistAcsInAts(acs,ats)){
-				    ats.list.add(acs);
-				}
+	// è£…è½½å¤šè¡¨where stringçš„å…ƒæ•°æ®
+	// whereStringæ•°æ®æ ¼å¼column_name:operator:is_join_key;column_name:operator:is_join_key
+	private void LoadWhereDataToACS(String whereString, AnalyzeTableStructure ats) {
+		String[] Columns = whereString.split(";");
+		for (int i = 0; i < Columns.length; i++) {
+			String column_name = Columns[i].substring(0, Columns[i].indexOf(":"));
+			String operator = Columns[i].substring(Columns[i].indexOf(":") + 1, Columns[i].lastIndexOf(":"));
+			int is_join_key = Integer.valueOf(Columns[i].substring(Columns[i].lastIndexOf(":") + 1));
+			AnalyzeColumnStructure acs = new AnalyzeColumnStructure();
+			acs.symbol = operator;
+			// è®¡ç®—æ“ä½œç¬¦åˆ†å€¼,ç­‰å·åˆ†å€¼æœ€é«˜,è¿™ä¸ªåˆ†å€¼æš‚æ—¶æ²¡æœ‰ç”¨
+			if (acs.symbol.equals("="))
+				acs.symbol_score = 10;
+			else {
+				acs.symbol_score = 5;
+			}
+			acs.column_name = column_name;
+			// æŸ¥æ‰¾è¿™ä¸€åˆ—çš„å…ƒæ•°æ®
+			Column_Node cn = md.searchColumnMetaData(ats.tablename, acs.column_name);
+			if (cn == null) {
+				auto_review_error = "Table:" + ats.tablename + " Column:" + acs.column_name + " does not exist.";
+				logger.warn(auto_review_error);
+				return;
+			}
+			// æŸ¥æ‰¾è¿™ä¸ªåˆ—æ‰€åœ¨çš„ç´¢å¼•å…ƒæ•°æ®
+			acs.list_index = md.searchIndexMetaData(ats.tablename, acs.column_name);
+			acs.column_type = cn.column_type;
+			// åˆ†å€¼æš‚æ—¶æ²¡æœ‰ç”¨
+			acs.column_type_score = 100;
+			acs.is_null_able = cn.is_nullable;
+			acs.Cardinality = cn.sample_card;
+			// åˆ†å€¼æš‚æ—¶æ²¡æœ‰ç”¨
+			acs.Cardinality_score = 100;
+			if (acs.list_index.isEmpty() == true)
+				acs.exist_index = false;
+			else {
+				acs.exist_index = true;
+			}
+			acs.type = 1;
+			// æ ‡ç¤ºè¿æ¥é”®
+			if (is_join_key == 1) {
+				acs.is_join_key = 1;
+			}
+
+			// å°†åˆ—çš„æ‰€æœ‰ä¿¡æ¯æ·»åŠ åˆ°tableä¸­,å‡†å¤‡åç»­çš„è®¡ç®—ä½¿ç”¨
+			if (!checkExistAcsInAts(acs, ats)) {
+				ats.list.add(acs);
+			}
 		}
-		
+
 	}
 
 	/*
-	 * ¼ì²éÊÇ·ñÒÑ´æÔÚµÄacs,Ö»ĞèÒª¿´¿´ÁĞÃûÊÇ·ñ´æÔÚ
+	 * æ£€æŸ¥æ˜¯å¦å·²å­˜åœ¨çš„acs,åªéœ€è¦çœ‹çœ‹åˆ—åæ˜¯å¦å­˜åœ¨
 	 */
-	private boolean checkExistAcsInAts(AnalyzeColumnStructure acs,
-			AnalyzeTableStructure ats) {
-		if(acs==null || ats==null){
+	private boolean checkExistAcsInAts(AnalyzeColumnStructure acs, AnalyzeTableStructure ats) {
+		if (acs == null || ats == null) {
 			logger.warn("checkExistAcsInAts:acs null or ats null.");
 			return false;
 		}
-		for(Iterator<AnalyzeColumnStructure> iterator=ats.list.iterator();iterator.hasNext();)
-		{
-			if(acs.column_name.equals(iterator.next().column_name)){
+		for (Iterator<AnalyzeColumnStructure> iterator = ats.list.iterator(); iterator.hasNext();) {
+			if (acs.column_name.equals(iterator.next().column_name)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	//¼ì²éparseÖĞµÄ´íÎó,ÒÔ¼°Ò»Ğ©sql_typeĞÅÏ¢
-	private boolean checkParseResult(String errmsg, int sql_type,int sql_id) 
-	{
-		if(errmsg.length()>0)
-		{
-			auto_review_error="´ËSQLÔÚÓï·¨½âÎöÊ±³öÏÖÈçÏÂµÄ´íÎó:"+errmsg;
-			wtb.updateSQLStatus(2, "", sql_id,auto_review_error,auto_review_tip);
-			logger.error("at the process of SQL parse,some errors happens:"+errmsg);
+	// æ£€æŸ¥parseä¸­çš„é”™è¯¯,ä»¥åŠä¸€äº›sql_typeä¿¡æ¯
+	private boolean checkParseResult(String errmsg, int sql_type, int sql_id) {
+		if (errmsg.length() > 0) {
+			auto_review_error = "æ­¤SQLåœ¨è¯­æ³•è§£ææ—¶å‡ºç°å¦‚ä¸‹çš„é”™è¯¯:" + errmsg;
+			wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip);
+			logger.error("at the process of SQL parse,some errors happens:" + errmsg);
 			return false;
 		}
-		
-		if(sql_type==0)
-		{
-			auto_review_tip="insertÓï¾ä,²»ĞèÒª½øĞĞÉóºË";
-			wtb.updateSQLStatus(1, "", sql_id,auto_review_error,auto_review_tip);
+
+		if (sql_type == 0) {
+			auto_review_tip = "insertè¯­å¥,ä¸éœ€è¦è¿›è¡Œå®¡æ ¸";
+			wtb.updateSQLStatus(1, "", sql_id, auto_review_error, auto_review_tip);
 			logger.info("insert SQL doesn't need to sql review.");
 			return false;
 		}
-		
-		if(sql_type==-1)
-		{
-			auto_review_error="ÎŞ·¨Ê¶±ğµÄSQLÓï¾äÀàĞÍ,µ±Ç°Ö§³Öselect,insert,update,deleteÓï¾ä";
-			wtb.updateSQLStatus(2,"", sql_id,auto_review_error,auto_review_tip);
+
+		if (sql_type == -1) {
+			auto_review_error = "æ— æ³•è¯†åˆ«çš„SQLè¯­å¥ç±»å‹,å½“å‰æ”¯æŒselect,insert,update,deleteè¯­å¥";
+			wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip);
 			logger.error("can't recongnize the sql type. now ,support select,insert,update,delete SQL statement");
 			return false;
 		}
-		
+
 		return true;
 	}
 
 	/*
-	 * Ìî³åµ¥±íµÄÔªÊı¾İ
+	 * å¡«å†²å•è¡¨çš„å…ƒæ•°æ®
 	 */
-	private boolean fillTableMetaData(String tablename,int sql_id) 
-	{
-		//»ñµÃ×îÏà½üµÄ±íÃû,Ö§³Ö·Ö¿â·Ö±í
-		String real_tablename=md.findMatchTable(tablename);
-		if(real_tablename==null)
-		{
-			 //¼ì²éÔÚÄ¿±êÊı¾İ¿âÖĞÊÇ·ñÕæµÄ´æÔÚ
-			 logger.warn(tablename+" ÔªÊı¾İÎŞ·¨¹¹Ôì. because the table doesn't exist.");
-		     auto_review_error= "Error:table "+tablename+" does not exist.";
-		     wtb.updateSQLStatus(2,"", sql_id,auto_review_error,auto_review_tip);
-			 return false;
-		}else if(md.checkTableExist(tablename)==false)
-		{
-			//¼ì²éÔÚCacheÖĞÊÇ·ñ´æÔÚ
-			if(metaDataBuildtype==0)
-    		{
-    		   md.buildTableMetaData(tablename);
-    		}
+	private boolean fillTableMetaData(String tablename, int sql_id) {
+		// è·å¾—æœ€ç›¸è¿‘çš„è¡¨å,æ”¯æŒåˆ†åº“åˆ†è¡¨
+		String real_tablename = md.findMatchTable(tablename);
+		if (real_tablename == null) {
+			// æ£€æŸ¥åœ¨ç›®æ ‡æ•°æ®åº“ä¸­æ˜¯å¦çœŸçš„å­˜åœ¨
+			logger.warn(tablename + " å…ƒæ•°æ®æ— æ³•æ„é€ . because the table doesn't exist.");
+			auto_review_error = "Error:table " + tablename + " does not exist.";
+			wtb.updateSQLStatus(2, "", sql_id, auto_review_error, auto_review_tip);
+			return false;
+		} else if (md.checkTableExist(tablename) == false) {
+			// æ£€æŸ¥åœ¨Cacheä¸­æ˜¯å¦å­˜åœ¨
+			if (metaDataBuildtype == 0) {
+				md.buildTableMetaData(tablename);
+			}
 		}
-		
-		if(real_tablename.equals(tablename)==false)
-		{
-		   //·Ö¿â·Ö±í,±íÃûÌæ»»tip
-			auto_review_tip="Table:"+tablename+"·Ö¿â·Ö±í,ÔªÊı¾İ¼ÓÔØ±íÃûÌæ»»Îª:"+real_tablename;
+
+		if (real_tablename.equals(tablename) == false) {
+			// åˆ†åº“åˆ†è¡¨,è¡¨åæ›¿æ¢tip
+			auto_review_tip = "Table:" + tablename + "åˆ†åº“åˆ†è¡¨,å…ƒæ•°æ®åŠ è½½è¡¨åæ›¿æ¢ä¸º:" + real_tablename;
 			logger.info(auto_review_tip);
-			wtb.updateSQLStatus(0,"", sql_id,auto_review_error,auto_review_tip);
+			wtb.updateSQLStatus(0, "", sql_id, auto_review_error, auto_review_tip);
 		}
-		
+
 		return true;
 	}
+
 	/*
-	 * °Ñgroup by columnsÓëorder by columns×Ö¶ÎÆ´ÆğÀ´
+	 * æŠŠgroup by columnsä¸order by columnså­—æ®µæ‹¼èµ·æ¥
 	 */
-	private String contactGroupbyOrderby(String groupbycolumn,String orderbycolumn) {
-		String orderString="";
-		if(groupbycolumn.length()>0)
-		{
-			orderString=groupbycolumn;
+	private String contactGroupbyOrderby(String groupbycolumn, String orderbycolumn) {
+		String orderString = "";
+		if (groupbycolumn.length() > 0) {
+			orderString = groupbycolumn;
 		}
-		if(orderbycolumn.length()>0)
-		{
-			if(orderString.length()>0)
-			{
-				orderString=orderString+","+orderbycolumn;
-			}
-			else {
-				orderString=orderbycolumn;
+		if (orderbycolumn.length() > 0) {
+			if (orderString.length() > 0) {
+				orderString = orderString + "," + orderbycolumn;
+			} else {
+				orderString = orderbycolumn;
 			}
 		}
-		
+
 		return orderString;
 	}
 
 	/*
-	 * ¼ì²éÅÅĞò×Ö¶ÎµÄ³¤¶È,±ÈÈç´ıÅÅĞò×Ö¶ÎÎªorder by a,b
-	 * ÔÚÊı¾İ×ÖµäÖĞaµÄÀàĞÍ¶¨ÒåÎªvarchar(1000),bµÄ¶¨ÒåÎªvarchar(1000)
-	 * Èç¹ûÕâ¸ö²éÑ¯Óï¾ä²é³öÀ´µÄ¼ÇÂ¼ÊıÓÖºÜ¶à,ÄÇÃ´¶Ôsort_buffer_sizeĞèÒªµ÷´ó,·ñÔò»á±¨´í
+	 * æ£€æŸ¥æ’åºå­—æ®µçš„é•¿åº¦,æ¯”å¦‚å¾…æ’åºå­—æ®µä¸ºorder by a,b
+	 * åœ¨æ•°æ®å­—å…¸ä¸­açš„ç±»å‹å®šä¹‰ä¸ºvarchar(1000),bçš„å®šä¹‰ä¸ºvarchar(1000)
+	 * å¦‚æœè¿™ä¸ªæŸ¥è¯¢è¯­å¥æŸ¥å‡ºæ¥çš„è®°å½•æ•°åˆå¾ˆå¤š,é‚£ä¹ˆå¯¹sort_buffer_sizeéœ€è¦è°ƒå¤§,å¦åˆ™ä¼šæŠ¥é”™
 	 */
-	private String checkOrderByColumnsLength(String orderbycolumn,AnalyzeTableStructure ats) 
-	{
+	private String checkOrderByColumnsLength(String orderbycolumn, AnalyzeTableStructure ats) {
 		String column_name;
 		String column_type;
 		int varchar_length;
 		AnalyzeColumnStructure acs;
-		String checkError="";
-		boolean is_find=false;
-		if(orderbycolumn.length()==0) return checkError;
+		String checkError = "";
+		boolean is_find = false;
+		if (orderbycolumn.length() == 0) return checkError;
 		String[] tmp = orderbycolumn.split(",");
-		for(int i=0;i<tmp.length;i++)
-		{
-			column_name=tmp[i];
-			for(Iterator<AnalyzeColumnStructure> r=ats.list.iterator();r.hasNext();)
-			{
-				acs=r.next();
-				if(acs.column_name.equals(column_name))
-				{
-					column_type=acs.column_type;
-					if(column_type.length()>7 && column_type.substring(0, 7).equals("varchar")==true)
-					{
-						int start=column_type.indexOf("(");
-						int end=column_type.indexOf(")");
-						varchar_length = Integer.valueOf(column_type.substring(start+1,end));
-						if(varchar_length > 200)
-						{
-							is_find=true;
-							logger.warn("order by column:"+column_name+"  column type:"+column_type+" is bigger than varchar(200). there has some danger in sort buffer size.");
+		for (int i = 0; i < tmp.length; i++) {
+			column_name = tmp[i];
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				if (acs.column_name.equals(column_name)) {
+					column_type = acs.column_type;
+					if (column_type.length() > 7 && column_type.substring(0, 7).equals("varchar") == true) {
+						int start = column_type.indexOf("(");
+						int end = column_type.indexOf(")");
+						varchar_length = Integer.valueOf(column_type.substring(start + 1, end));
+						if (varchar_length > 200) {
+							is_find = true;
+							logger.warn("order by column:" + column_name + "  column type:" + column_type
+									+ " is bigger than varchar(200). there has some danger in sort buffer size.");
 						}
 					}
 					break;
 				}
 			}
 		}
-		
-		if(is_find==true)
-		{
-			checkError="order by column type is so big.";
+
+		if (is_find == true) {
+			checkError = "order by column type is so big.";
 		}
 		return checkError;
 	}
-	
+
 	/*
-	 * ¹¹Ôì½¨Ë÷ÒıµÄ½Å±¾
+	 * æ„é€ å»ºç´¢å¼•çš„è„šæœ¬
 	 */
-	private String BuildCreateIndexScript(String index_columns,AnalyzeTableStructure ats)
-	{
+	private String BuildCreateIndexScript(String index_columns, AnalyzeTableStructure ats) {
 		String index_name;
-		String createIndexScript="";
-		if(index_columns.indexOf(",")>0)
-		{
-		    index_name="idx_"+ats.tablename+"_"+index_columns.substring(0, index_columns.indexOf(","));
+		String createIndexScript = "";
+		if (index_columns.indexOf(",") > 0) {
+			index_name = "idx_" + ats.tablename + "_" + index_columns.substring(0, index_columns.indexOf(","));
+		} else {
+			index_name = "idx_" + ats.tablename + "_" + index_columns;
 		}
-		else {
-			index_name="idx_"+ats.tablename+"_"+index_columns;
+
+		if (ats.tablename.equals(ats.real_tablename)) {
+			createIndexScript = "create index " + index_name + " on " + ats.tablename + "(" + index_columns + ");";
+		} else {
+			// åˆ†åº“åˆ†è¡¨
+			createIndexScript = ats.tablename + "åˆ†åº“åˆ†è¡¨   create index " + index_name + " on " + ats.real_tablename + "(" + index_columns
+					+ ");";
 		}
-		
-		if(ats.tablename.equals(ats.real_tablename)){
-			createIndexScript="create index "+index_name+" on "+ats.tablename+"("+index_columns+");";
-		}else{
-			//·Ö¿â·Ö±í
-			createIndexScript=ats.tablename+"·Ö¿â·Ö±í   create index "+index_name+" on "+ats.real_tablename+"("+index_columns+");";
+
+		if (index_columns.length() == 0) {
+			logger.warn("æ²¡æœ‰ä»»ä½•whereæ¡ä»¶å­—æ®µ,ä¸åˆ›å»ºç´¢å¼•");
+		} else {
+			logger.info("create index script: " + createIndexScript);
 		}
-		
-		if(index_columns.length()==0)
-		{
-			        logger.warn("Ã»ÓĞÈÎºÎwhereÌõ¼ş×Ö¶Î,²»´´½¨Ë÷Òı");
-		}
-		else {
-					logger.info("create index script: "+createIndexScript);
-		}	
-		
-		return createIndexScript;
-	}
-	
-	/*
-	 * ¼ÆËãµ¥±í×îÓÅË÷Òı
-	 */
-	private String ComputeBestIndex(AnalyzeTableStructure ats) {
-		//µÚÒ»ÖÖ¹æÔò
-		//¿´¿´whereÌõ¼ş×Ö¶ÎÖĞÊÇ·ñÓĞÖ÷¼ü×Ö¶Î,Èç¹ûÓĞÔòÖ±½ÓÓÃÖ÷¼üË÷Òı
-		AnalyzeColumnStructure acs;
-		boolean is_find_best_index=false;
-		
-		for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-		{
-			acs=r.next();
-			//·ÇÅÅĞò×Ö¶Î
-			if(acs.is_order_column==true) continue;
-			//¼ì²éË÷Òı
-			if(acs.list_index != null && acs.symbol.equals("!=")==false)
-			{
-				for(Iterator<Index_Node> in=acs.list_index.iterator();in.hasNext();)
-				{
-					Index_Node tmp_iNode=in.next();
-					if(tmp_iNode.index_name.equals("PRIMARY") && tmp_iNode.seq_in_index==1)
-					{
-						logger.info(acs.column_name+"ÓĞPRIMARY KEYË÷Òı,Ö±½ÓÊ¹ÓÃ");
-						is_find_best_index=true;
-						break;
-					}
-				}
-			}
-			
-			if(is_find_best_index==true) break;
-		}
-		//º¬ÓĞÖ÷¼üË÷Òı×Ö¶Î,ÔòÖ±½ÓÍË³ö
-		if(is_find_best_index==true) return "PRIMARY";
-		
-		
-		//µÚ¶şÖÖ¹æÔò
-		//¿´¿´Ìõ¼ş×Ö¶ÎÖĞÊÇ·ñÓĞÎ¨Ò»¼ü×Ö¶Î,Èç¹ûÓĞÔòÖ±½ÓÓÃÎ¨Ò»¼üË÷Òı
-		for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-		{
-			acs=r.next();
-			//·ÇÅÅĞò×Ö¶Î
-			if(acs.is_order_column==true) continue;
-			//¼ì²éË÷Òı
-			if(acs.list_index != null && acs.symbol.equals("!=")==false)
-			{
-				for(Iterator<Index_Node> in=acs.list_index.iterator();in.hasNext();)
-				{
-					Index_Node tmp_iNode=in.next();
-					if(tmp_iNode.non_unique==0 && tmp_iNode.seq_in_index==1)
-					{
-						logger.info(acs.column_name+"ÓĞUNIQUE KEYË÷Òı,Ö±½ÓÊ¹ÓÃ");
-						is_find_best_index=true;
-						break;
-					}
-				}
-			}
-			
-			if(is_find_best_index==true) break;
-		}
-		//º¬ÓĞÎ¨Ò»¼üË÷ÒıÇ°µ¼ÁĞ×Ö¶Î,ÔòÖ±½ÓÍË³ö
-		if(is_find_best_index==true) return "UNIQUE KEY";
-		
-		
-		//µÚÈıÖÖ¹æÔò,´Ë±í³ıÁËÖ÷¼ü,Î¨Ò»¼üÒÔÍâ,¼ÆËã×îÓÅË÷Òı
-		//¼ÆËãÕë¶Ô±¾SQLµÄ×îÓÅË÷Òı
-		List<Column_Card> list_card_denghao = new ArrayList<Column_Card>();
-		List<Column_Card> list_card_no_denghao = new ArrayList<Column_Card>();
-		List<Column_Card> list_card_order = new ArrayList<Column_Card>();
-		int type; //È¡Öµ0,1,2    0´ú±íµÈºÅ²Ù×÷µÄcolumn,Õâ¸ö¾ßÓĞ×î¸ßµÄÓÅÏÈ¼¶,1Îª·ÇµÈºÅ,2ÎªÅÅĞò×Ö¶Î
-		type=0;
-		SortColumnCard(list_card_denghao,ats,type);
-		type=1;
-		SortColumnCard(list_card_no_denghao,ats,type);
-		type=2;
-		SortColumnCard(list_card_order,ats,type);
-		
-		String index_columns=BuildBTreeIndex(list_card_denghao,list_card_no_denghao,list_card_order);
-		String createIndexScript=BuildCreateIndexScript(index_columns,ats);	
-		//¹¹½¨´´½¨Ë÷ÒıµÄ½Å±¾
+
 		return createIndexScript;
 	}
 
 	/*
-	 * 
-	 * ¶à±íjoinSQL¼ÆËãÃ¿¸öµ¥±íµÄ×îÓÅË÷Òı
+	 * è®¡ç®—å•è¡¨æœ€ä¼˜ç´¢å¼•
 	 */
-	private String ComputeBestIndex(AnalyzeTableStructure ats,
-			                        Table_Relationship table_Relationship) {
-		//µÚÒ»ÖÖ¹æÔò
-		//¿´¿´whereÌõ¼ş×Ö¶ÎÖĞÊÇ·ñÓĞÖ÷¼ü×Ö¶Î,Èç¹ûÓĞÔòÖ±½ÓÓÃÖ÷¼üË÷Òı
+	private String ComputeBestIndex(AnalyzeTableStructure ats) {
+		// ç¬¬ä¸€ç§è§„åˆ™
+		// çœ‹çœ‹whereæ¡ä»¶å­—æ®µä¸­æ˜¯å¦æœ‰ä¸»é”®å­—æ®µ,å¦‚æœæœ‰åˆ™ç›´æ¥ç”¨ä¸»é”®ç´¢å¼•
 		AnalyzeColumnStructure acs;
-		boolean is_find_best_index=false;
-		
-		for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-		{
-			acs=r.next();
-			//·ÇÅÅĞò×Ö¶Î
-			if(acs.is_order_column==true) continue;
-			//Á¬½Ó×Ö¶Îcolumnname2²»ÄÜ×÷ÎªÌõ¼ş
-			if(acs.is_join_key==1 && acs.column_name.equals(table_Relationship.columnname2)==true){
-				continue;
-			}
-			//¼ì²éË÷Òı
-			if(acs.list_index != null 
-					&& acs.symbol.equals("!=")==false)
-			{
-				for(Iterator<Index_Node> in=acs.list_index.iterator();in.hasNext();)
-				{
-					Index_Node tmp_iNode=in.next();
-					if(tmp_iNode.index_name.equals("PRIMARY") && tmp_iNode.seq_in_index==1)
-					{
-						logger.info(acs.column_name+"ÓĞPRIMARY KEYË÷Òı,Ö±½ÓÊ¹ÓÃ");
-						is_find_best_index=true;
+		boolean is_find_best_index = false;
+
+		for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+			acs = r.next();
+			// éæ’åºå­—æ®µ
+			if (acs.is_order_column == true) continue;
+			// æ£€æŸ¥ç´¢å¼•
+			if (acs.list_index != null && acs.symbol.equals("!=") == false) {
+				for (Iterator<Index_Node> in = acs.list_index.iterator(); in.hasNext();) {
+					Index_Node tmp_iNode = in.next();
+					if (tmp_iNode.index_name.equals("PRIMARY") && tmp_iNode.seq_in_index == 1) {
+						logger.info(acs.column_name + "æœ‰PRIMARY KEYç´¢å¼•,ç›´æ¥ä½¿ç”¨");
+						is_find_best_index = true;
 						break;
 					}
 				}
 			}
-			
-			if(is_find_best_index==true) break;
-		}//end for
-		
-		//º¬ÓĞÖ÷¼üË÷Òı×Ö¶Î,ÔòÖ±½ÓÍË³ö
-		if(is_find_best_index==true) return ats.tablename+" has PRIMARY index;";
-		
-		
-		//µÚ¶şÖÖ¹æÔò
-		//¿´¿´Ìõ¼ş×Ö¶ÎÖĞÊÇ·ñÓĞÎ¨Ò»¼ü×Ö¶Î,Èç¹ûÓĞÔòÖ±½ÓÓÃÎ¨Ò»¼üË÷Òı
-		for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-		{
-			acs=r.next();
-			//·ÇÅÅĞò×Ö¶Î
-			if(acs.is_order_column==true) continue;
-			//Á¬½Ó×Ö¶Îcolumnname2²»ÄÜ×÷ÎªÌõ¼ş
-			if(acs.is_join_key==1 && acs.column_name.equals(table_Relationship.columnname2)==true){
-				continue;
-			}
-			//¼ì²éË÷Òı
-			if(acs.list_index != null && acs.symbol.equals("!=")==false)
-			{
-				for(Iterator<Index_Node> in=acs.list_index.iterator();in.hasNext();)
-				{
-					Index_Node tmp_iNode=in.next();
-					if(tmp_iNode.non_unique==0 && tmp_iNode.seq_in_index==1)
-					{
-						logger.info(acs.column_name+"ÓĞUNIQUE KEYË÷Òı,Ö±½ÓÊ¹ÓÃ");
-						is_find_best_index=true;
-						break;
-					}
-				}
-			}
-			
-			if(is_find_best_index==true) break;
+
+			if (is_find_best_index == true) break;
 		}
-		//º¬ÓĞÎ¨Ò»¼üË÷ÒıÇ°µ¼ÁĞ×Ö¶Î,ÔòÖ±½ÓÍË³ö
-		if(is_find_best_index==true) return ats.tablename+" has UNIQUE KEY index;";
-		
-		
-		//µÚÈıÖÖ¹æÔò,´Ë±í³ıÁËÖ÷¼ü,Î¨Ò»¼üÒÔÍâ,¼ÆËã×îÓÅË÷Òı
-		//¼ÆËãÕë¶Ô±¾SQLµÄ×îÓÅË÷Òı
+		// å«æœ‰ä¸»é”®ç´¢å¼•å­—æ®µ,åˆ™ç›´æ¥é€€å‡º
+		if (is_find_best_index == true) return "PRIMARY";
+
+		// ç¬¬äºŒç§è§„åˆ™
+		// çœ‹çœ‹æ¡ä»¶å­—æ®µä¸­æ˜¯å¦æœ‰å”¯ä¸€é”®å­—æ®µ,å¦‚æœæœ‰åˆ™ç›´æ¥ç”¨å”¯ä¸€é”®ç´¢å¼•
+		for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+			acs = r.next();
+			// éæ’åºå­—æ®µ
+			if (acs.is_order_column == true) continue;
+			// æ£€æŸ¥ç´¢å¼•
+			if (acs.list_index != null && acs.symbol.equals("!=") == false) {
+				for (Iterator<Index_Node> in = acs.list_index.iterator(); in.hasNext();) {
+					Index_Node tmp_iNode = in.next();
+					if (tmp_iNode.non_unique == 0 && tmp_iNode.seq_in_index == 1) {
+						logger.info(acs.column_name + "æœ‰UNIQUE KEYç´¢å¼•,ç›´æ¥ä½¿ç”¨");
+						is_find_best_index = true;
+						break;
+					}
+				}
+			}
+
+			if (is_find_best_index == true) break;
+		}
+		// å«æœ‰å”¯ä¸€é”®ç´¢å¼•å‰å¯¼åˆ—å­—æ®µ,åˆ™ç›´æ¥é€€å‡º
+		if (is_find_best_index == true) return "UNIQUE KEY";
+
+		// ç¬¬ä¸‰ç§è§„åˆ™,æ­¤è¡¨é™¤äº†ä¸»é”®,å”¯ä¸€é”®ä»¥å¤–,è®¡ç®—æœ€ä¼˜ç´¢å¼•
+		// è®¡ç®—é’ˆå¯¹æœ¬SQLçš„æœ€ä¼˜ç´¢å¼•
 		List<Column_Card> list_card_denghao = new ArrayList<Column_Card>();
 		List<Column_Card> list_card_no_denghao = new ArrayList<Column_Card>();
 		List<Column_Card> list_card_order = new ArrayList<Column_Card>();
-		int type; //È¡Öµ0,1,2    0´ú±íµÈºÅ²Ù×÷µÄcolumn,Õâ¸ö¾ßÓĞ×î¸ßµÄÓÅÏÈ¼¶,1Îª·ÇµÈºÅ,2ÎªÅÅĞò×Ö¶Î
-		type=0;
-		SortColumnCard(list_card_denghao,ats,type,table_Relationship);
-		type=1;
-		SortColumnCard(list_card_no_denghao,ats,type);
-		type=2;
-		SortColumnCard(list_card_order,ats,type);
-		
-		String index_columns=BuildBTreeIndex(list_card_denghao,list_card_no_denghao,list_card_order);
-		String createIndexScript=BuildCreateIndexScript(index_columns,ats);	
-		//¹¹½¨´´½¨Ë÷ÒıµÄ½Å±¾
+		int type; // å–å€¼0,1,2 0ä»£è¡¨ç­‰å·æ“ä½œçš„column,è¿™ä¸ªå…·æœ‰æœ€é«˜çš„ä¼˜å…ˆçº§,1ä¸ºéç­‰å·,2ä¸ºæ’åºå­—æ®µ
+		type = 0;
+		SortColumnCard(list_card_denghao, ats, type);
+		type = 1;
+		SortColumnCard(list_card_no_denghao, ats, type);
+		type = 2;
+		SortColumnCard(list_card_order, ats, type);
+
+		String index_columns = BuildBTreeIndex(list_card_denghao, list_card_no_denghao, list_card_order);
+		String createIndexScript = BuildCreateIndexScript(index_columns, ats);
+		// æ„å»ºåˆ›å»ºç´¢å¼•çš„è„šæœ¬
 		return createIndexScript;
 	}
+
 	/*
-	 * ·µ»Ø×î¼ÑË÷Òı×éºÏ
+	 * å¤šè¡¨joinSQLè®¡ç®—æ¯ä¸ªå•è¡¨çš„æœ€ä¼˜ç´¢å¼•
 	 */
-	private String BuildBTreeIndex(List<Column_Card> list_card_denghao,
-			                      List<Column_Card> list_card_no_denghao,
-			                      List<Column_Card> list_card_order) 
-	{
-		String str="";
-		if(list_card_denghao.size()==0 && list_card_no_denghao.size()==0 && list_card_order.size()==0)
-		{
+	private String ComputeBestIndex(AnalyzeTableStructure ats, Table_Relationship table_Relationship) {
+		// ç¬¬ä¸€ç§è§„åˆ™
+		// çœ‹çœ‹whereæ¡ä»¶å­—æ®µä¸­æ˜¯å¦æœ‰ä¸»é”®å­—æ®µ,å¦‚æœæœ‰åˆ™ç›´æ¥ç”¨ä¸»é”®ç´¢å¼•
+		AnalyzeColumnStructure acs;
+		boolean is_find_best_index = false;
+
+		for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+			acs = r.next();
+			// éæ’åºå­—æ®µ
+			if (acs.is_order_column == true) continue;
+			// è¿æ¥å­—æ®µcolumnname2ä¸èƒ½ä½œä¸ºæ¡ä»¶
+			if (acs.is_join_key == 1 && acs.column_name.equals(table_Relationship.columnname2) == true) {
+				continue;
+			}
+			// æ£€æŸ¥ç´¢å¼•
+			if (acs.list_index != null && acs.symbol.equals("!=") == false) {
+				for (Iterator<Index_Node> in = acs.list_index.iterator(); in.hasNext();) {
+					Index_Node tmp_iNode = in.next();
+					if (tmp_iNode.index_name.equals("PRIMARY") && tmp_iNode.seq_in_index == 1) {
+						logger.info(acs.column_name + "æœ‰PRIMARY KEYç´¢å¼•,ç›´æ¥ä½¿ç”¨");
+						is_find_best_index = true;
+						break;
+					}
+				}
+			}
+
+			if (is_find_best_index == true) break;
+		} // end for
+
+		// å«æœ‰ä¸»é”®ç´¢å¼•å­—æ®µ,åˆ™ç›´æ¥é€€å‡º
+		if (is_find_best_index == true) return ats.tablename + " has PRIMARY index;";
+
+		// ç¬¬äºŒç§è§„åˆ™
+		// çœ‹çœ‹æ¡ä»¶å­—æ®µä¸­æ˜¯å¦æœ‰å”¯ä¸€é”®å­—æ®µ,å¦‚æœæœ‰åˆ™ç›´æ¥ç”¨å”¯ä¸€é”®ç´¢å¼•
+		for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+			acs = r.next();
+			// éæ’åºå­—æ®µ
+			if (acs.is_order_column == true) continue;
+			// è¿æ¥å­—æ®µcolumnname2ä¸èƒ½ä½œä¸ºæ¡ä»¶
+			if (acs.is_join_key == 1 && acs.column_name.equals(table_Relationship.columnname2) == true) {
+				continue;
+			}
+			// æ£€æŸ¥ç´¢å¼•
+			if (acs.list_index != null && acs.symbol.equals("!=") == false) {
+				for (Iterator<Index_Node> in = acs.list_index.iterator(); in.hasNext();) {
+					Index_Node tmp_iNode = in.next();
+					if (tmp_iNode.non_unique == 0 && tmp_iNode.seq_in_index == 1) {
+						logger.info(acs.column_name + "æœ‰UNIQUE KEYç´¢å¼•,ç›´æ¥ä½¿ç”¨");
+						is_find_best_index = true;
+						break;
+					}
+				}
+			}
+
+			if (is_find_best_index == true) break;
+		}
+		// å«æœ‰å”¯ä¸€é”®ç´¢å¼•å‰å¯¼åˆ—å­—æ®µ,åˆ™ç›´æ¥é€€å‡º
+		if (is_find_best_index == true) return ats.tablename + " has UNIQUE KEY index;";
+
+		// ç¬¬ä¸‰ç§è§„åˆ™,æ­¤è¡¨é™¤äº†ä¸»é”®,å”¯ä¸€é”®ä»¥å¤–,è®¡ç®—æœ€ä¼˜ç´¢å¼•
+		// è®¡ç®—é’ˆå¯¹æœ¬SQLçš„æœ€ä¼˜ç´¢å¼•
+		List<Column_Card> list_card_denghao = new ArrayList<Column_Card>();
+		List<Column_Card> list_card_no_denghao = new ArrayList<Column_Card>();
+		List<Column_Card> list_card_order = new ArrayList<Column_Card>();
+		int type; // å–å€¼0,1,2 0ä»£è¡¨ç­‰å·æ“ä½œçš„column,è¿™ä¸ªå…·æœ‰æœ€é«˜çš„ä¼˜å…ˆçº§,1ä¸ºéç­‰å·,2ä¸ºæ’åºå­—æ®µ
+		type = 0;
+		SortColumnCard(list_card_denghao, ats, type, table_Relationship);
+		type = 1;
+		SortColumnCard(list_card_no_denghao, ats, type);
+		type = 2;
+		SortColumnCard(list_card_order, ats, type);
+
+		String index_columns = BuildBTreeIndex(list_card_denghao, list_card_no_denghao, list_card_order);
+		String createIndexScript = BuildCreateIndexScript(index_columns, ats);
+		// æ„å»ºåˆ›å»ºç´¢å¼•çš„è„šæœ¬
+		return createIndexScript;
+	}
+
+	/*
+	 * è¿”å›æœ€ä½³ç´¢å¼•ç»„åˆ
+	 */
+	private String BuildBTreeIndex(List<Column_Card> list_card_denghao, List<Column_Card> list_card_no_denghao,
+			List<Column_Card> list_card_order) {
+		String str = "";
+		if (list_card_denghao.size() == 0 && list_card_no_denghao.size() == 0 && list_card_order.size() == 0) {
 			return str;
 		}
 
-		//ÒÀ´Î°ÑÈı¸öÅÅĞòÊı×é´®ÆğÀ´¼´¿É
-		//µÈÖµÌõ¼ş×Ö¶Î·ÅÔÚÕû¸öË÷Òı×Ö¶ÎµÄµÚÒ»ÕóÓª
-		for(int i=0;i<list_card_denghao.size();i++)
-		{
-			str=str+","+list_card_denghao.get(i).column_name;
+		// ä¾æ¬¡æŠŠä¸‰ä¸ªæ’åºæ•°ç»„ä¸²èµ·æ¥å³å¯
+		// ç­‰å€¼æ¡ä»¶å­—æ®µæ”¾åœ¨æ•´ä¸ªç´¢å¼•å­—æ®µçš„ç¬¬ä¸€é˜µè¥
+		for (int i = 0; i < list_card_denghao.size(); i++) {
+			str = str + "," + list_card_denghao.get(i).column_name;
 		}
-		
-		//ÅÅĞò×Ö¶Î·ÅÔÚÕû¸öË÷Òı×Ö¶ÎµÄµÚ¶şÕóÓª
-		for(int k=list_card_order.size()-1;k>=0;k--)
-		{
-			int addr=str.indexOf(","+list_card_order.get(k).column_name);
-			if(addr<0){
-				str=str+","+list_card_order.get(k).column_name;
+
+		// æ’åºå­—æ®µæ”¾åœ¨æ•´ä¸ªç´¢å¼•å­—æ®µçš„ç¬¬äºŒé˜µè¥
+		for (int k = list_card_order.size() - 1; k >= 0; k--) {
+			int addr = str.indexOf("," + list_card_order.get(k).column_name);
+			if (addr < 0) {
+				str = str + "," + list_card_order.get(k).column_name;
 			}
 		}
-		
-	    //·ÇµÈÖµÌõ¼ş×Ö¶Î·ÅÔÚÕû¸öË÷Òı×Ö¶ÎµÄµÚÈıÕóÓª
-		for(int j=0;j<list_card_no_denghao.size();j++)
-		{
-			if(str.indexOf(","+list_card_no_denghao.get(j).column_name) == -1)
-			{
-			     str=str+","+list_card_no_denghao.get(j).column_name;
+
+		// éç­‰å€¼æ¡ä»¶å­—æ®µæ”¾åœ¨æ•´ä¸ªç´¢å¼•å­—æ®µçš„ç¬¬ä¸‰é˜µè¥
+		for (int j = 0; j < list_card_no_denghao.size(); j++) {
+			if (str.indexOf("," + list_card_no_denghao.get(j).column_name) == -1) {
+				str = str + "," + list_card_no_denghao.get(j).column_name;
 			}
 		}
-		
-		if(str.substring(0, 1).equals(",")==true)
-			str=str.substring(1);
-		
+
+		if (str.substring(0, 1).equals(",") == true) str = str.substring(1);
+
 		return str;
 	}
 
 	/*
-	 * ¶ÔÁĞµÄCardinality½øĞĞÅÅĞò
+	 * å¯¹åˆ—çš„Cardinalityè¿›è¡Œæ’åº
 	 */
-	private void SortColumnCard(List<Column_Card> list_card,
-			AnalyzeTableStructure ats,int type) {
+	private void SortColumnCard(List<Column_Card> list_card, AnalyzeTableStructure ats, int type) {
 		// TODO Auto-generated method stub
 		AnalyzeColumnStructure acs;
-		if(ats.list.isEmpty()==true) return;
-		//×°ÔØÊı¾İ
-		//µÈºÅ²Ù×÷
-		if(type==0)
-		{
-			for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-			{
-			    acs=r.next();
-			    //²»¼ÆËãÅÅĞò×Ö¶ÎµÄCardinality
-			    if(acs.is_order_column==true) continue;
-			    if(acs.symbol.equals("=")==true)
-			    {
-				    Column_Card cc = new Column_Card();
-				    cc.column_name=acs.column_name;
-				    cc.Cardinality=acs.Cardinality;
-				    cc.acs=acs;
-				    list_card.add(cc);
-			    }
+		if (ats.list.isEmpty() == true) return;
+		// è£…è½½æ•°æ®
+		// ç­‰å·æ“ä½œ
+		if (type == 0) {
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				// ä¸è®¡ç®—æ’åºå­—æ®µçš„Cardinality
+				if (acs.is_order_column == true) continue;
+				if (acs.symbol.equals("=") == true) {
+					Column_Card cc = new Column_Card();
+					cc.column_name = acs.column_name;
+					cc.Cardinality = acs.Cardinality;
+					cc.acs = acs;
+					list_card.add(cc);
+				}
 			}
 		}
-		
-		//·ÇµÈºÅ²Ù×÷
-		if(type==1)
-		{
-			for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-			{
-			    acs=r.next();
-			    //²»¼ÆËãÅÅĞò×Ö¶ÎµÄCardinality
-			    if(acs.is_order_column==true) continue;
-			    if(acs.symbol.equals("=")==false)
-			    {
-				    Column_Card cc = new Column_Card();
-				    cc.column_name=acs.column_name;
-				    cc.Cardinality=acs.Cardinality;
-				    cc.acs=acs;
-				    list_card.add(cc);
-			    }
+
+		// éç­‰å·æ“ä½œ
+		if (type == 1) {
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				// ä¸è®¡ç®—æ’åºå­—æ®µçš„Cardinality
+				if (acs.is_order_column == true) continue;
+				if (acs.symbol.equals("=") == false) {
+					Column_Card cc = new Column_Card();
+					cc.column_name = acs.column_name;
+					cc.Cardinality = acs.Cardinality;
+					cc.acs = acs;
+					list_card.add(cc);
+				}
 			}
 		}
-		
-		//ÅÅĞò×Ö¶Î²Ù×÷
-		if(type==2)
-		{
-			for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-			{
-			    acs=r.next();
-			    if(acs.is_order_column==true)
-			    {
-				    Column_Card cc = new Column_Card();
-				    cc.column_name=acs.column_name;
-				    cc.Cardinality=acs.Cardinality;
-				    cc.acs=acs;
-				    list_card.add(cc);
-			    }
+
+		// æ’åºå­—æ®µæ“ä½œ
+		if (type == 2) {
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				if (acs.is_order_column == true) {
+					Column_Card cc = new Column_Card();
+					cc.column_name = acs.column_name;
+					cc.Cardinality = acs.Cardinality;
+					cc.acs = acs;
+					list_card.add(cc);
+				}
 			}
-			
-			//ÅÅĞò×Ö¶ÎµÄ»°,²»ĞèÒª±È½ÏCardinality,Ö±½Ó·µ»Ø
+
+			// æ’åºå­—æ®µçš„è¯,ä¸éœ€è¦æ¯”è¾ƒCardinality,ç›´æ¥è¿”å›
 			return;
 		}
-		
-		//ÅÅĞò
-		for(int i=0;i<list_card.size();i++)
-		{
-			for(int j=i+1;j<list_card.size();j++)
-			{
-				if(list_card.get(i).Cardinality < list_card.get(j).Cardinality)
-				{
-					//½»»»
+
+		// æ’åº
+		for (int i = 0; i < list_card.size(); i++) {
+			for (int j = i + 1; j < list_card.size(); j++) {
+				if (list_card.get(i).Cardinality < list_card.get(j).Cardinality) {
+					// äº¤æ¢
 					Column_Card tmp_cc = list_card.get(i);
 					list_card.set(i, list_card.get(j));
-					list_card.set(j, tmp_cc);	
+					list_card.set(j, tmp_cc);
 				}
 			}
 		}
 	}
 
-	
 	/*
-	 * ¶ÔÁĞµÄCardinality½øĞĞÅÅĞò
+	 * å¯¹åˆ—çš„Cardinalityè¿›è¡Œæ’åº
 	 */
-	private void SortColumnCard(List<Column_Card> list_card,AnalyzeTableStructure ats,
-			int type,Table_Relationship table_Relationship) 
-	{
+	private void SortColumnCard(List<Column_Card> list_card, AnalyzeTableStructure ats, int type,
+			Table_Relationship table_Relationship) {
 		AnalyzeColumnStructure acs;
-		if(ats.list.isEmpty()==true) return;
-		//×°ÔØÊı¾İ
-		//µÈºÅ²Ù×÷
-		if(type==0)
-		{
-			for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-			{
-			    acs=r.next();
-			    //²»¼ÆËãÅÅĞò×Ö¶ÎµÄCardinality
-			    if(acs.is_order_column==true) continue;
-			    //Á¬½Ó×Ö¶Îcolumnname2²»ÄÜ×÷ÎªÌõ¼ş
-				if(acs.is_join_key==1 && acs.column_name.equals(table_Relationship.columnname2)==true){
+		if (ats.list.isEmpty() == true) return;
+		// è£…è½½æ•°æ®
+		// ç­‰å·æ“ä½œ
+		if (type == 0) {
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				// ä¸è®¡ç®—æ’åºå­—æ®µçš„Cardinality
+				if (acs.is_order_column == true) continue;
+				// è¿æ¥å­—æ®µcolumnname2ä¸èƒ½ä½œä¸ºæ¡ä»¶
+				if (acs.is_join_key == 1 && acs.column_name.equals(table_Relationship.columnname2) == true) {
 					continue;
 				}
-			    if(acs.symbol.equals("=")==true)
-			    {
-				    Column_Card cc = new Column_Card();
-				    cc.column_name=acs.column_name;
-				    cc.Cardinality=acs.Cardinality;
-				    cc.acs=acs;
-				    list_card.add(cc);
-			    }
+				if (acs.symbol.equals("=") == true) {
+					Column_Card cc = new Column_Card();
+					cc.column_name = acs.column_name;
+					cc.Cardinality = acs.Cardinality;
+					cc.acs = acs;
+					list_card.add(cc);
+				}
 			}
 		}
-		
-		//·ÇµÈºÅ²Ù×÷
-		if(type==1)
-		{
-			for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-			{
-			    acs=r.next();
-			    //²»¼ÆËãÅÅĞò×Ö¶ÎµÄCardinality
-			    if(acs.is_order_column==true) continue;
-			    if(acs.symbol.equals("=")==false)
-			    {
-				    Column_Card cc = new Column_Card();
-				    cc.column_name=acs.column_name;
-				    cc.Cardinality=acs.Cardinality;
-				    cc.acs=acs;
-				    list_card.add(cc);
-			    }
+
+		// éç­‰å·æ“ä½œ
+		if (type == 1) {
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				// ä¸è®¡ç®—æ’åºå­—æ®µçš„Cardinality
+				if (acs.is_order_column == true) continue;
+				if (acs.symbol.equals("=") == false) {
+					Column_Card cc = new Column_Card();
+					cc.column_name = acs.column_name;
+					cc.Cardinality = acs.Cardinality;
+					cc.acs = acs;
+					list_card.add(cc);
+				}
 			}
 		}
-		
-		//ÅÅĞò×Ö¶Î²Ù×÷
-		if(type==2)
-		{
-			for(Iterator<AnalyzeColumnStructure> r = ats.list.iterator();r.hasNext();)
-			{
-			    acs=r.next();
-			    if(acs.is_order_column==true)
-			    {
-				    Column_Card cc = new Column_Card();
-				    cc.column_name=acs.column_name;
-				    cc.Cardinality=acs.Cardinality;
-				    cc.acs=acs;
-				    list_card.add(cc);
-			    }
+
+		// æ’åºå­—æ®µæ“ä½œ
+		if (type == 2) {
+			for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+				acs = r.next();
+				if (acs.is_order_column == true) {
+					Column_Card cc = new Column_Card();
+					cc.column_name = acs.column_name;
+					cc.Cardinality = acs.Cardinality;
+					cc.acs = acs;
+					list_card.add(cc);
+				}
 			}
-			
-			//ÅÅĞò×Ö¶ÎµÄ»°,²»ĞèÒª±È½ÏCardinality,Ö±½Ó·µ»Ø
+
+			// æ’åºå­—æ®µçš„è¯,ä¸éœ€è¦æ¯”è¾ƒCardinality,ç›´æ¥è¿”å›
 			return;
 		}
-		
-		//ÅÅĞò
-		for(int i=0;i<list_card.size();i++)
-		{
-			for(int j=i+1;j<list_card.size();j++)
-			{
-				if(list_card.get(i).Cardinality < list_card.get(j).Cardinality)
-				{
-					//½»»»
+
+		// æ’åº
+		for (int i = 0; i < list_card.size(); i++) {
+			for (int j = i + 1; j < list_card.size(); j++) {
+				if (list_card.get(i).Cardinality < list_card.get(j).Cardinality) {
+					// äº¤æ¢
 					Column_Card tmp_cc = list_card.get(i);
 					list_card.set(i, list_card.get(j));
-					list_card.set(j, tmp_cc);	
+					list_card.set(j, tmp_cc);
 				}
 			}
 		}
 	}
 
 	/*
-	 * ×°ÔØÅÅĞòÊı¾İ
+	 * è£…è½½æ’åºæ•°æ®
 	 */
-	private void LoadOrderDataToACS(String orderbycolumn,
-			                        AnalyzeTableStructure ats,Map<String, String> map) {
-		
-		//Èç¹ûÃ»ÓĞÅÅĞò×Ö¶Î,²»ĞèÒªºóÃæµÄ²Ù×÷
-		if(orderbycolumn.length()==0) return;
-		//Ê¹ÓÃ¼¯ºÏÖ÷ÒªÊÇÎªÁËÈ¥ÖØ
+	private void LoadOrderDataToACS(String orderbycolumn, AnalyzeTableStructure ats, Map<String, String> map) {
+
+		// å¦‚æœæ²¡æœ‰æ’åºå­—æ®µ,ä¸éœ€è¦åé¢çš„æ“ä½œ
+		if (orderbycolumn.length() == 0) return;
+		// ä½¿ç”¨é›†åˆä¸»è¦æ˜¯ä¸ºäº†å»é‡
 		Set<String> set = new HashSet<String>();
 		String[] tmp = orderbycolumn.split(",");
-		for(int i=0;i<tmp.length;i++)
-		{
+		for (int i = 0; i < tmp.length; i++) {
 			set.add(tmp[i]);
 		}
-		
+
 		String column_name;
-		for(Iterator<String> r = set.iterator();r.hasNext();)
-		{
-			column_name=r.next();
-			//ÒªÏÈ¼ì²éÔÚatsÀïÁĞÊÇ·ñÒÑ´æÔÚ,Èç¹û²»´æÔÚ,´æÈë,Èç¹û´æÔÚ,Ö±½Ó¸ü¸Ä×Ö¶Î
-			checkOrderColumnExist(ats,column_name,map);
+		for (Iterator<String> r = set.iterator(); r.hasNext();) {
+			column_name = r.next();
+			// è¦å…ˆæ£€æŸ¥åœ¨atsé‡Œåˆ—æ˜¯å¦å·²å­˜åœ¨,å¦‚æœä¸å­˜åœ¨,å­˜å…¥,å¦‚æœå­˜åœ¨,ç›´æ¥æ›´æ”¹å­—æ®µ
+			checkOrderColumnExist(ats, column_name, map);
 		}
 	}
 
 	/*
-	 * ÒòÎªÎÒÃÇÊÇÏÈ×°ÔØwhereÌõ¼ş×Ö¶ÎÊı¾İ,ÔÙ×°ÔØÅÅĞò×Ö¶Î,ËùÒÔ¿ÉÄÜ»á´æÔÚÖØ¸´
+	 * å› ä¸ºæˆ‘ä»¬æ˜¯å…ˆè£…è½½whereæ¡ä»¶å­—æ®µæ•°æ®,å†è£…è½½æ’åºå­—æ®µ,æ‰€ä»¥å¯èƒ½ä¼šå­˜åœ¨é‡å¤
 	 */
-	private void checkOrderColumnExist(AnalyzeTableStructure ats, String column_name,Map<String, String> map) {
+	private void checkOrderColumnExist(AnalyzeTableStructure ats, String column_name, Map<String, String> map) {
 		// TODO Auto-generated method stub
 		AnalyzeColumnStructure acs;
-		boolean is_find=false;
-		for(Iterator<AnalyzeColumnStructure> r=ats.list.iterator();r.hasNext();)
-		{
-			acs=r.next();
-			if(acs.column_name.equals(column_name)==true)
-			{
-				//´æÔÚ,ÔòÖ»ĞèÒª¸ü¸ÄÅÅĞò×Ö¶ÎµÄÖµ
-				acs.is_order_column=true;
-				is_find=true;
+		boolean is_find = false;
+		for (Iterator<AnalyzeColumnStructure> r = ats.list.iterator(); r.hasNext();) {
+			acs = r.next();
+			if (acs.column_name.equals(column_name) == true) {
+				// å­˜åœ¨,åˆ™åªéœ€è¦æ›´æ”¹æ’åºå­—æ®µçš„å€¼
+				acs.is_order_column = true;
+				is_find = true;
 				break;
 			}
 		}
-		
-		if(is_find==false)
-		{
-			//Ö±½ÓĞ´ÈëatsÖĞ
+
+		if (is_find == false) {
+			// ç›´æ¥å†™å…¥atsä¸­
 			AnalyzeColumnStructure newacs = new AnalyzeColumnStructure();
-			newacs.column_name=column_name;
-			//²éÕÒÕâÒ»ÁĞµÄÔªÊı¾İ
-			Column_Node cn=md.searchColumnMetaData(ats.tablename, column_name);
-			if(cn==null){
-				//¿´¿´ÊÇ·ñÊ¹ÓÃÁË±ğÃû
-				if(map==null){
-					auto_review_error="Table:"+ats.tablename+" Column:"+column_name+" does not exist.";
+			newacs.column_name = column_name;
+			// æŸ¥æ‰¾è¿™ä¸€åˆ—çš„å…ƒæ•°æ®
+			Column_Node cn = md.searchColumnMetaData(ats.tablename, column_name);
+			if (cn == null) {
+				// çœ‹çœ‹æ˜¯å¦ä½¿ç”¨äº†åˆ«å
+				if (map == null) {
+					auto_review_error = "Table:" + ats.tablename + " Column:" + column_name + " does not exist.";
 					logger.warn(auto_review_error);
 					return;
 				}
-				String real_column_name=map.get(column_name);
-				if(real_column_name!=null){
-					if(real_column_name.indexOf("(")>=0)
-					{
-						//Ê¹ÓÃº¯ÊıÕâÖÖÒ²²»´¦ÀíÁË
+				String real_column_name = map.get(column_name);
+				if (real_column_name != null) {
+					if (real_column_name.indexOf("(") >= 0) {
+						// ä½¿ç”¨å‡½æ•°è¿™ç§ä¹Ÿä¸å¤„ç†äº†
 						return;
-					}else {
-						cn=md.searchColumnMetaData(ats.tablename, real_column_name);
-						if(cn==null){
-							auto_review_error="Table:"+ats.tablename+" Column:"+column_name+" does not exist.";
+					} else {
+						cn = md.searchColumnMetaData(ats.tablename, real_column_name);
+						if (cn == null) {
+							auto_review_error = "Table:" + ats.tablename + " Column:" + column_name + " does not exist.";
 							logger.warn(auto_review_error);
 							return;
-						}else {
-							newacs.column_name=real_column_name;
+						} else {
+							newacs.column_name = real_column_name;
 						}
 					}
-				}else {
-					auto_review_error="Table:"+ats.tablename+" Column:"+column_name+" does not exist.";
+				} else {
+					auto_review_error = "Table:" + ats.tablename + " Column:" + column_name + " does not exist.";
 					logger.warn(auto_review_error);
 					return;
 				}
-				
+
 			}
-			
-			newacs.column_type=cn.column_type;
-			newacs.is_order_column=true;
+
+			newacs.column_type = cn.column_type;
+			newacs.is_order_column = true;
 			ats.list.add(newacs);
 		}
 	}
 
 	/*
-	 * ×°²ÃwhereÊı¾İ
+	 * è£…è£whereæ•°æ®
 	 */
-	private void LoadWhereDataToACS(Tree_Node whereNode,
-			                        AnalyzeTableStructure ats) {
+	private void LoadWhereDataToACS(Tree_Node whereNode, AnalyzeTableStructure ats) {
 		// TODO Auto-generated method stub
-		if(whereNode==null)
-		{
-			logger.warn("LoadWhereDataToACS×°²ÃwhereÊı¾İÊ±³öÏÖÒì³£,whereNode=null");
+		if (whereNode == null) {
+			logger.warn("LoadWhereDataToACSè£…è£whereæ•°æ®æ—¶å‡ºç°å¼‚å¸¸,whereNode=null");
 			return;
 		}
-		if(whereNode.node_type==4)
-		{
-			//µ±Ç°½áµãÎªand / or
-			LoadWhereDataToACS(whereNode.left_node,ats);
-			LoadWhereDataToACS(whereNode.right_node,ats);
-		}
-		else if(whereNode.node_type==2)
-		{
+		if (whereNode.node_type == 4) {
+			// å½“å‰ç»“ç‚¹ä¸ºand / or
+			LoadWhereDataToACS(whereNode.left_node, ats);
+			LoadWhereDataToACS(whereNode.right_node, ats);
+		} else if (whereNode.node_type == 2) {
 			AnalyzeColumnStructure acs = new AnalyzeColumnStructure();
-			//µ±Ç°½áµãÎª²Ù×÷·û>,<,=,>=,<= in
-			acs.symbol=whereNode.node_content;
-			//¼ÆËã²Ù×÷·û·ÖÖµ,µÈºÅ·ÖÖµ×î¸ß
-			if(acs.symbol.equals("="))
+			// å½“å‰ç»“ç‚¹ä¸ºæ“ä½œç¬¦>,<,=,>=,<= in
+			acs.symbol = whereNode.node_content;
+			// è®¡ç®—æ“ä½œç¬¦åˆ†å€¼,ç­‰å·åˆ†å€¼æœ€é«˜
+			if (acs.symbol.equals("="))
 				acs.symbol_score = 10;
 			else {
 				acs.symbol_score = 5;
 			}
-			//×óº¢×Ó¿Ï¶¨ÎªÌõ¼ş±äÁ¿ÁĞÃû
-			acs.column_name=whereNode.left_node.node_content;
-			//²éÕÒÕâÒ»ÁĞµÄÔªÊı¾İ
-			Column_Node cn=md.searchColumnMetaData(ats.tablename, acs.column_name);
-			if(cn==null){
-				auto_review_error="Table:"+ats.tablename+" Column:"+acs.column_name+" does not exist.";
+			// å·¦å­©å­è‚¯å®šä¸ºæ¡ä»¶å˜é‡åˆ—å
+			acs.column_name = whereNode.left_node.node_content;
+			// æŸ¥æ‰¾è¿™ä¸€åˆ—çš„å…ƒæ•°æ®
+			Column_Node cn = md.searchColumnMetaData(ats.tablename, acs.column_name);
+			if (cn == null) {
+				auto_review_error = "Table:" + ats.tablename + " Column:" + acs.column_name + " does not exist.";
 				logger.warn(auto_review_error);
 				return;
 			}
-			acs.column_type=cn.column_type;
-			//to do
-			acs.column_type_score=100;
-			acs.is_null_able=cn.is_nullable;
-			acs.Cardinality=cn.sample_card;
-			//to do ÕâÀïµÄ·ÖÊıÊÇÒ»¸öÏà¶ÔµÄ·ÖÊı
-			acs.Cardinality_score=100;
-		    //²éÕÒÕâ¸öÁĞËùÔÚµÄË÷ÒıÔªÊı¾İ
+			acs.column_type = cn.column_type;
+			// to do
+			acs.column_type_score = 100;
+			acs.is_null_able = cn.is_nullable;
+			acs.Cardinality = cn.sample_card;
+			// to do è¿™é‡Œçš„åˆ†æ•°æ˜¯ä¸€ä¸ªç›¸å¯¹çš„åˆ†æ•°
+			acs.Cardinality_score = 100;
+			// æŸ¥æ‰¾è¿™ä¸ªåˆ—æ‰€åœ¨çš„ç´¢å¼•å…ƒæ•°æ®
 			acs.list_index = md.searchIndexMetaData(ats.tablename, acs.column_name);
-			if(acs.list_index.isEmpty()==true)
-				acs.exist_index=false;
+			if (acs.list_index.isEmpty() == true)
+				acs.exist_index = false;
 			else {
-				acs.exist_index=true;
+				acs.exist_index = true;
 			}
-			acs.type=1;
-			
-			//½«ÁĞµÄËùÓĞĞÅÏ¢Ìí¼Óµ½tableÖĞ,×¼±¸ºóĞøµÄ¼ÆËãÊ¹ÓÃ
-			if(!checkExistAcsInAts(acs,ats)){
-			    ats.list.add(acs);
+			acs.type = 1;
+
+			// å°†åˆ—çš„æ‰€æœ‰ä¿¡æ¯æ·»åŠ åˆ°tableä¸­,å‡†å¤‡åç»­çš„è®¡ç®—ä½¿ç”¨
+			if (!checkExistAcsInAts(acs, ats)) {
+				ats.list.add(acs);
 			}
 		}
 	}
 
-	//´òÓ¡ËùÓĞµÄSQL
-	public void printAllSQL()
-	{
+	// æ‰“å°æ‰€æœ‰çš„SQL
+	public void printAllSQL() {
 		String sql;
-		logger.info("ËùÓĞ´ıÉóºËµÄSQL×Ü¹²"+list_sql.size()+"Ìõ£¬SQLÈçÏÂ£º");
-		for(Iterator<SQL_Node> r=list_sql.iterator();r.hasNext();)
-    	{
-    		sql = r.next().sqlString;
-    		logger.info("SQL="+sql);
-    	}
+		logger.info("æ‰€æœ‰å¾…å®¡æ ¸çš„SQLæ€»å…±" + list_sql.size() + "æ¡ï¼ŒSQLå¦‚ä¸‹ï¼š");
+		for (Iterator<SQL_Node> r = list_sql.iterator(); r.hasNext();) {
+			sql = r.next().sqlString;
+			logger.info("SQL=" + sql);
+		}
 	}
-	
+
 	/*
-	 * Ç°¶Ëµ÷ÓÃµÄ½Ó¿Ú
+	 * å‰ç«¯è°ƒç”¨çš„æ¥å£
 	 */
-	public void createIndexService(int fileMapId) throws Exception
-	{
-		    try {
-				getAllSQL(fileMapId);
-				reviewSQL();
-			} catch (Exception e) {
-				logger.error(e);
-				throw e;
-			}
-	        
+	public void createIndexService(int fileMapId) throws Exception {
+		try {
+			getAllSQL(fileMapId);
+			reviewSQL();
+		} catch (Exception e) {
+			logger.error(e);
+			throw e;
+		}
+
 	}
-	
+
 	/**
 	 * @param args
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	public static void main(String[] args) throws SQLException 
-	{
-        CreateIndex ci = new CreateIndex();
-        //ÈÎºÎµØ·½newÕâ¸ö¶ÔÏó£¬¶¼ĞèÒª¶ÔÁ½¸öÁ¬½Ó×öÒ»¸ö¼ì²é£¬¿´¿´ÓĞÃ»ÓĞ´´½¨³É¹¦£¬ÓĞÈÎºÎÒ»¸öÃ»ÓĞ´´½¨³É¹¦£¬¼´¿Ì·µ»Ø
-        if(ci.wtb.checkConnection()==false)
-        {
-        	logger.error("ÎŞ·¨Á¬½ÓÉÏSQL REVIEW DATABASE£¬Çë¼ì²éÅäÖÃ¡£");
-        	return;
-        }
-        if(ci.md.checkConnection()==false)
-        {
-        	logger.error("ÎŞ·¨Á¬½ÓÉÏ¶ÔÓ¦µÄ DATABASE£¬Çë¼ì²éÅäÖÃ¡£");
-        	return;
-        }
-        
-        ci.getAllSQL();
-        ci.reviewSQL();
+	public static void main(String[] args) throws SQLException {
+		CreateIndex ci = new CreateIndex();
+		// ä»»ä½•åœ°æ–¹newè¿™ä¸ªå¯¹è±¡ï¼Œéƒ½éœ€è¦å¯¹ä¸¤ä¸ªè¿æ¥åšä¸€ä¸ªæ£€æŸ¥ï¼Œçœ‹çœ‹æœ‰æ²¡æœ‰åˆ›å»ºæˆåŠŸï¼Œæœ‰ä»»ä½•ä¸€ä¸ªæ²¡æœ‰åˆ›å»ºæˆåŠŸï¼Œå³åˆ»è¿”å›
+		if (ci.wtb.checkConnection() == false) {
+			logger.error("æ— æ³•è¿æ¥ä¸ŠSQL REVIEW DATABASEï¼Œè¯·æ£€æŸ¥é…ç½®ã€‚");
+			return;
+		}
+		if (ci.md.checkConnection() == false) {
+			logger.error("æ— æ³•è¿æ¥ä¸Šå¯¹åº”çš„ DATABASEï¼Œè¯·æ£€æŸ¥é…ç½®ã€‚");
+			return;
+		}
+
+		ci.getAllSQL();
+		ci.reviewSQL();
 	}
 
 }

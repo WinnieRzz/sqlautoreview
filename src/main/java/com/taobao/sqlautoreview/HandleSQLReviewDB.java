@@ -25,267 +25,240 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-
-
 /*
- * sqlreviewdb Êı¾İ¿â¶ÁĞ´²Ù×÷
+ * sqlreviewdb æ•°æ®åº“è¯»å†™æ“ä½œ
  */
-public class HandleSQLReviewDB implements IHandleDB{
-	    //log4jÈÕÖ¾
-	    private static Logger logger = Logger.getLogger(HandleSQLReviewDB.class);
-	    
-		public String IP;
-		public int port;
-		public String dbname;
-		public String user;
-		public String password;
-		public Connection conn;
-		
-       //¹¹Ôìº¯Êı
-       public HandleSQLReviewDB()
-       {
-    	   HandleXMLConf dbconfig = new HandleXMLConf("sqlreviewdb.xml");
-    	   this.IP=dbconfig.getDbConfigIP();
-    	   this.port=dbconfig.getDbConfigPort();
-    	   this.dbname=dbconfig.getDbConfigDbname();
-    	   this.user=dbconfig.getDbConfigUser();
-    	   this.password=dbconfig.getDbConfigPassword();
-    	   this.conn=getConnection();
-       }
-       
-       //»ñµÃÊı¾İ¿âÁ¬½Ó
-       public Connection getConnection()
-       {
-    	   String JDriver = "com.mysql.jdbc.Driver";
-    	   String conURL="jdbc:mysql://"+IP+":"+port+"/"+dbname;
-    	   try {
-               Class.forName(JDriver);
-           }
-           catch(ClassNotFoundException cnf_e) {  
-        	   // Èç¹ûÕÒ²»µ½Çı¶¯Àà
-        	   logger.error("Driver Not Found: ", cnf_e);
-           }
+public class HandleSQLReviewDB implements IHandleDB {
+	// log4jæ—¥å¿—
+	private static Logger logger = Logger.getLogger(HandleSQLReviewDB.class);
 
-           try {
-               Connection conn = DriverManager.getConnection(conURL, this.user, this.password);  
-               return conn;
-           }
-           catch(SQLException se)
-           {
-        	   logger.error("ÎŞ·¨´´½¨µ½Êı¾İ¿âµÄÁ¬½Ó.", se);
-        	   return null;
-           } 
-       }
-       
-       //¼ì²éÁ¬½ÓµÄÓĞĞ§ĞÔ
-	   	public boolean checkConnection() 
-       {
-	   		if(this.conn==null){
-	   			return false;
-	   		}else {
-	   			return true;
-			}	
-	   	}
-       
-	     //ÕâÀïµÄ´úÂëÓëXmlToSQLÖĞµÄ´úÂëÖØ¸´£¬Ö÷ÒªÊÇÒòÎª¿ÉÄÜSQLÓĞ¿ÉÄÜ²»Í¨¹ıXmlToSQLÀà½øÈëÊı¾İ¿âÖĞ
-	   	 //ÎªÁË±ÜÃâ³ö´í£¬ÔÚparseÃ¿Ò»ÌõSQLÖ®Ç°,ÔÙ´Î¶ÔÃ¿ÌõSQL¸ñÊ½»¯Ò»ÏÂ
-	   	public static String delByPattern(String str) {
-	   	      Pattern p = Pattern.compile(" {2,}");
-	   	      Matcher m = p.matcher(str);
-	   	      String result = m.replaceAll(" ");
-	   	      return result;
-	   	   }
-	   	
-	   	public static String formatSql(String unFormatSql) {
-	   	      String newSql = unFormatSql.trim().replace("\n", " ")
-	   	            .replace("\t", " ").replace("\r", " ").replace("\f", " ");
-	   	    
-	   	      return delByPattern(newSql);
-	   	   }
-       //Ğ´SQLÊı¾İµ½Êı¾İ¿âÖĞ
-       public boolean insertDB(int sqlmap_file_id,String java_class_id,String sql_xml,String real_sql,String sql_comment)
-       {
-    	   try{
-    		   sql_comment=new String(sql_comment.getBytes(),"GBK");
-    	       String command="insert into xmltosql(sqlmap_file_id,java_class_id,sql_xml,real_sql,sql_comment,gmt_create,gmt_modified,status) "; 
-    	       command=command+"values("+sqlmap_file_id+",'"+java_class_id+"','"+sql_xml+"','"+real_sql+"','"+sql_comment+"',"+"now(),"+"now(),"+"0);";
-    	       Statement stmt = conn.createStatement();
-    	       stmt.execute(command);
-               stmt.close();
-    	   }
-    	   catch(Exception e)
-    	   {
-    		   logger.error("Ğ´ÈëÊı¾İ¿â³ö´í", e);
-    		   return false;
-    	   }
-     
-    	   return true;
-       }
-       
-       //´ÓÊı¾İ¿âÀï»ñµÃ´ıÉóºËµÄSQL
-       public List<SQL_Node> getAllSQL()
-       {
-    	 
-    	List<SQL_Node> list_sql = new LinkedList<SQL_Node>();
-       	try
-       	{
-       	   HandleXMLConf sqlmapfileconf=new HandleXMLConf("sqlmapfile.xml");
-    	   int sqlmap_file_id=sqlmapfileconf.getSQLMapFileID();
-       	   String command="select id,real_sql from xmltosql where status = 0 and sqlmap_file_id="+sqlmap_file_id;
-       	   Statement stmt = conn.createStatement();
-   	       stmt.execute(command);
-   	       ResultSet rs = stmt.getResultSet();
-   	  
-   	       while(rs.next())
-   	       {
-   	    	   SQL_Node snNode= new SQL_Node();
-   	    	   snNode.id=rs.getInt("id");
-   	    	   snNode.sqlString=rs.getString("real_sql");
-   	    	   snNode.sqlString=formatSql(snNode.sqlString);
-   	    	   list_sql.add(snNode);
-   	       }
-   	       
-   	       rs.close();
-           stmt.close();
-           return list_sql;
-       	}
-           catch(SQLException e)
-           {
-        	   logger.error("¼ìË÷´ıÉóºËµÄSQL³ö´í", e);
-        	   return null;
-           }
-       }
-       
-     //´ÓÊı¾İ¿âÀï»ñµÃ´ıÉóºËµÄSQL
-       public List<SQL_Node> getAllSQL(int sqlmapfileID)
-       {
-    	 
-    	List<SQL_Node> list_sql = new LinkedList<SQL_Node>();
-       	try
-       	{
-    	   int sqlmap_file_id=sqlmapfileID;
-       	   String command="select id,real_sql from xmltosql where status = 0 and sqlmap_file_id="+sqlmap_file_id;
-       	   Statement stmt = conn.createStatement();
-   	       stmt.execute(command);
-   	       ResultSet rs = stmt.getResultSet();
-   	  
-   	       while(rs.next())
-   	       {
-   	    	   SQL_Node snNode= new SQL_Node();
-   	    	   snNode.id=rs.getInt("id");
-   	    	   snNode.sqlString=rs.getString("real_sql");
-   	    	   snNode.sqlString=formatSql(snNode.sqlString);
-   	    	   list_sql.add(snNode);
-   	       }
-   	       
-   	       rs.close();
-           stmt.close();
-           return list_sql;
-       	}
-           catch(SQLException e)
-           {
-        	   logger.error("¼ìË÷´ıÉóºËµÄSQL³ö´í", e);
-        	   return null;
-           }
-       }
-       
-       //¸ü¸Äµ¥¸öSQLµÄÉóºË×´Ì¬,ÒÔ¼°SQL½á¹û
-       public int updateSQLStatus(int status,String sql_auto_index,int id,String auto_review_err,String auto_review_tip)
-       {
-    	   String command="update xmltosql set status="+status+",sql_auto_index='"+sql_auto_index+"',";
-    	   command=command+"auto_review_err='"+auto_review_err+"',";
-    	   command=command+"auto_review_tip='"+auto_review_tip+"',";
-		   command=command+"auto_review_time=now(),gmt_modified=now() where id="+id+";";
-    	   try {
-				Statement stmt = conn.createStatement();
-		   	    stmt.execute(command);
-		   	    if(stmt.getUpdateCount()!=1)
-		   	    	return -1;
-		   	    else {
-					return 0;
-				}
-			} catch (SQLException e) {
-				logger.error("Ö´ĞĞcommand="+command+"³öÏÖÒì³£", e);
-				return -2;
+	public String IP;
+	public int port;
+	public String dbname;
+	public String user;
+	public String password;
+	public Connection conn;
+
+	// æ„é€ å‡½æ•°
+	public HandleSQLReviewDB() {
+		HandleXMLConf dbconfig = new HandleXMLConf("sqlreviewdb.xml");
+		this.IP = dbconfig.getDbConfigIP();
+		this.port = dbconfig.getDbConfigPort();
+		this.dbname = dbconfig.getDbConfigDbname();
+		this.user = dbconfig.getDbConfigUser();
+		this.password = dbconfig.getDbConfigPassword();
+		this.conn = getConnection();
+	}
+
+	// è·å¾—æ•°æ®åº“è¿æ¥
+	public Connection getConnection() {
+		String JDriver = "com.mysql.jdbc.Driver";
+		String conURL = "jdbc:mysql://" + IP + ":" + port + "/" + dbname;
+		try {
+			Class.forName(JDriver);
+		} catch (ClassNotFoundException cnf_e) {
+			// å¦‚æœæ‰¾ä¸åˆ°é©±åŠ¨ç±»
+			logger.error("Driver Not Found: ", cnf_e);
+		}
+
+		try {
+			Connection conn = DriverManager.getConnection(conURL, this.user, this.password);
+			return conn;
+		} catch (SQLException se) {
+			logger.error("æ— æ³•åˆ›å»ºåˆ°æ•°æ®åº“çš„è¿æ¥.", se);
+			return null;
+		}
+	}
+
+	// æ£€æŸ¥è¿æ¥çš„æœ‰æ•ˆæ€§
+	public boolean checkConnection() {
+		if (this.conn == null) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	// è¿™é‡Œçš„ä»£ç ä¸XmlToSQLä¸­çš„ä»£ç é‡å¤ï¼Œä¸»è¦æ˜¯å› ä¸ºå¯èƒ½SQLæœ‰å¯èƒ½ä¸é€šè¿‡XmlToSQLç±»è¿›å…¥æ•°æ®åº“ä¸­
+	// ä¸ºäº†é¿å…å‡ºé”™ï¼Œåœ¨parseæ¯ä¸€æ¡SQLä¹‹å‰,å†æ¬¡å¯¹æ¯æ¡SQLæ ¼å¼åŒ–ä¸€ä¸‹
+	public static String delByPattern(String str) {
+		Pattern p = Pattern.compile(" {2,}");
+		Matcher m = p.matcher(str);
+		String result = m.replaceAll(" ");
+		return result;
+	}
+
+	public static String formatSql(String unFormatSql) {
+		String newSql = unFormatSql.trim().replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("\f", " ");
+
+		return delByPattern(newSql);
+	}
+
+	// å†™SQLæ•°æ®åˆ°æ•°æ®åº“ä¸­
+	public boolean insertDB(int sqlmap_file_id, String java_class_id, String sql_xml, String real_sql, String sql_comment) {
+		try {
+			sql_comment = new String(sql_comment.getBytes(), "GBK");
+			String command = "insert into xmltosql(sqlmap_file_id,java_class_id,sql_xml,real_sql,sql_comment,gmt_create,gmt_modified,status) ";
+			command = command + "values(" + sqlmap_file_id + ",'" + java_class_id + "','" + sql_xml + "','" + real_sql + "','"
+					+ sql_comment + "'," + "now()," + "now()," + "0);";
+			Statement stmt = conn.createStatement();
+			stmt.execute(command);
+			stmt.close();
+		} catch (Exception e) {
+			logger.error("å†™å…¥æ•°æ®åº“å‡ºé”™", e);
+			return false;
+		}
+
+		return true;
+	}
+
+	// ä»æ•°æ®åº“é‡Œè·å¾—å¾…å®¡æ ¸çš„SQL
+	public List<SQL_Node> getAllSQL() {
+
+		List<SQL_Node> list_sql = new LinkedList<SQL_Node>();
+		try {
+			HandleXMLConf sqlmapfileconf = new HandleXMLConf("sqlmapfile.xml");
+			int sqlmap_file_id = sqlmapfileconf.getSQLMapFileID();
+			String command = "select id,real_sql from xmltosql where status = 0 and sqlmap_file_id=" + sqlmap_file_id;
+			Statement stmt = conn.createStatement();
+			stmt.execute(command);
+			ResultSet rs = stmt.getResultSet();
+
+			while (rs.next()) {
+				SQL_Node snNode = new SQL_Node();
+				snNode.id = rs.getInt("id");
+				snNode.sqlString = rs.getString("real_sql");
+				snNode.sqlString = formatSql(snNode.sqlString);
+				list_sql.add(snNode);
 			}
-       }
-       
-       //¸ü¸Äµ¥¸öSQLµÄÉóºË×´Ì¬,ÒÔ¼°SQL½á¹û
-       public int updateSQLStatus(int status,String sql_auto_index,int id,String auto_review_err,String auto_review_tip,String tablenames)
-       {
-    	   String command="update xmltosql set status="+status+",sql_auto_index='"+sql_auto_index+"',";
-    	   command=command+"auto_review_err='"+auto_review_err+"',";
-    	   command=command+"auto_review_tip='"+auto_review_tip+"',";
-    	   command=command+"table_name='"+tablenames+"',";
-		   command=command+"auto_review_time=now(),gmt_modified=now() where id="+id+";";
-    	   try {
-				Statement stmt = conn.createStatement();
-		   	    stmt.execute(command);
-		   	    if(stmt.getUpdateCount()!=1)
-		   	    	return -1;
-		   	    else {
-					return 0;
-				}
-			} catch (SQLException e) {
-				logger.error("Ö´ĞĞcommand="+command+"³öÏÖÒì³£", e);
-				return -2;
+
+			rs.close();
+			stmt.close();
+			return list_sql;
+		} catch (SQLException e) {
+			logger.error("æ£€ç´¢å¾…å®¡æ ¸çš„SQLå‡ºé”™", e);
+			return null;
+		}
+	}
+
+	// ä»æ•°æ®åº“é‡Œè·å¾—å¾…å®¡æ ¸çš„SQL
+	public List<SQL_Node> getAllSQL(int sqlmapfileID) {
+
+		List<SQL_Node> list_sql = new LinkedList<SQL_Node>();
+		try {
+			int sqlmap_file_id = sqlmapfileID;
+			String command = "select id,real_sql from xmltosql where status = 0 and sqlmap_file_id=" + sqlmap_file_id;
+			Statement stmt = conn.createStatement();
+			stmt.execute(command);
+			ResultSet rs = stmt.getResultSet();
+
+			while (rs.next()) {
+				SQL_Node snNode = new SQL_Node();
+				snNode.id = rs.getInt("id");
+				snNode.sqlString = rs.getString("real_sql");
+				snNode.sqlString = formatSql(snNode.sqlString);
+				list_sql.add(snNode);
 			}
-       }
+
+			rs.close();
+			stmt.close();
+			return list_sql;
+		} catch (SQLException e) {
+			logger.error("æ£€ç´¢å¾…å®¡æ ¸çš„SQLå‡ºé”™", e);
+			return null;
+		}
+	}
+
+	// æ›´æ”¹å•ä¸ªSQLçš„å®¡æ ¸çŠ¶æ€,ä»¥åŠSQLç»“æœ
+	public int updateSQLStatus(int status, String sql_auto_index, int id, String auto_review_err, String auto_review_tip) {
+		String command = "update xmltosql set status=" + status + ",sql_auto_index='" + sql_auto_index + "',";
+		command = command + "auto_review_err='" + auto_review_err + "',";
+		command = command + "auto_review_tip='" + auto_review_tip + "',";
+		command = command + "auto_review_time=now(),gmt_modified=now() where id=" + id + ";";
+		try {
+			Statement stmt = conn.createStatement();
+			stmt.execute(command);
+			if (stmt.getUpdateCount() != 1)
+				return -1;
+			else {
+				return 0;
+			}
+		} catch (SQLException e) {
+			logger.error("æ‰§è¡Œcommand=" + command + "å‡ºç°å¼‚å¸¸", e);
+			return -2;
+		}
+	}
+
+	// æ›´æ”¹å•ä¸ªSQLçš„å®¡æ ¸çŠ¶æ€,ä»¥åŠSQLç»“æœ
+	public int updateSQLStatus(int status, String sql_auto_index, int id, String auto_review_err, String auto_review_tip,
+			String tablenames) {
+		String command = "update xmltosql set status=" + status + ",sql_auto_index='" + sql_auto_index + "',";
+		command = command + "auto_review_err='" + auto_review_err + "',";
+		command = command + "auto_review_tip='" + auto_review_tip + "',";
+		command = command + "table_name='" + tablenames + "',";
+		command = command + "auto_review_time=now(),gmt_modified=now() where id=" + id + ";";
+		try {
+			Statement stmt = conn.createStatement();
+			stmt.execute(command);
+			if (stmt.getUpdateCount() != 1)
+				return -1;
+			else {
+				return 0;
+			}
+		} catch (SQLException e) {
+			logger.error("æ‰§è¡Œcommand=" + command + "å‡ºç°å¼‚å¸¸", e);
+			return -2;
+		}
+	}
 
 	@Override
-	public List<Index_Node> getAllIndexes() 
-	{
+	public List<Index_Node> getAllIndexes() {
 		List<Index_Node> list_indexes = new LinkedList<Index_Node>();
-       	try
-       	{
-       	   HandleXMLConf sqlmapfileconf=new HandleXMLConf("sqlmapfile.xml");
-    	   int sqlmap_file_id=sqlmapfileconf.getSQLMapFileID();
-       	   String command="select table_name,sql_auto_index from xmltosql where status = 1 and sqlmap_file_id="+sqlmap_file_id;
-       	   Statement stmt = conn.createStatement();
-   	       stmt.execute(command);
-   	       ResultSet rs = stmt.getResultSet();
-   	  
-   	       while(rs.next())
-   	       {
-   	    	   Index_Node index_Node=new Index_Node();
-   	    	   //ÕâÌõSQLËùÉæ¼°µÄ±íÃû
-   	    	   index_Node.table_name=rs.getString("table_name");
-   	    	   //ÕâÌõSQL´´½¨Ë÷ÒıµÄ½Å±¾
-   	    	   index_Node.index_name=rs.getString("sql_auto_index");
-   	    	   list_indexes.add(index_Node);
-   	       }
-   	       
-   	       rs.close();
-           stmt.close();
-           return list_indexes;
-       	}
-           catch(SQLException e)
-           {
-        	   logger.error("¼ìË÷ÒÑÉú³ÉµÄindexes³ö´í", e);
-        	   return null;
-           }
+		try {
+			HandleXMLConf sqlmapfileconf = new HandleXMLConf("sqlmapfile.xml");
+			int sqlmap_file_id = sqlmapfileconf.getSQLMapFileID();
+			String command = "select table_name,sql_auto_index from xmltosql where status = 1 and sqlmap_file_id=" + sqlmap_file_id;
+			Statement stmt = conn.createStatement();
+			stmt.execute(command);
+			ResultSet rs = stmt.getResultSet();
+
+			while (rs.next()) {
+				Index_Node index_Node = new Index_Node();
+				// è¿™æ¡SQLæ‰€æ¶‰åŠçš„è¡¨å
+				index_Node.table_name = rs.getString("table_name");
+				// è¿™æ¡SQLåˆ›å»ºç´¢å¼•çš„è„šæœ¬
+				index_Node.index_name = rs.getString("sql_auto_index");
+				list_indexes.add(index_Node);
+			}
+
+			rs.close();
+			stmt.close();
+			return list_indexes;
+		} catch (SQLException e) {
+			logger.error("æ£€ç´¢å·²ç”Ÿæˆçš„indexeså‡ºé”™", e);
+			return null;
+		}
 	}
 
 	/*
-	 * ×Ô¶¯»¯²âÊÔÊ¹ÓÃ
+	 * è‡ªåŠ¨åŒ–æµ‹è¯•ä½¿ç”¨
 	 */
-	public void deleteSqlByID(int sqlmap_file_id)
-	{
-		String command="delete from xmltosql where sqlmap_file_id="+sqlmap_file_id;
+	public void deleteSqlByID(int sqlmap_file_id) {
+		String command = "delete from xmltosql where sqlmap_file_id=" + sqlmap_file_id;
 		Statement stmt;
 		try {
 			stmt = conn.createStatement();
 			stmt.execute(command);
-			int rows=stmt.getUpdateCount();
+			int rows = stmt.getUpdateCount();
 			stmt.close();
-			logger.info(rows+" is deleted.");
+			logger.info(rows + " is deleted.");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/*
-	 * ×Ô¶¯»¯²âÊÔÊ¹ÓÃ
+	 * è‡ªåŠ¨åŒ–æµ‹è¯•ä½¿ç”¨
 	 */
 	public void closeConn() {
 		try {
@@ -294,70 +267,64 @@ public class HandleSQLReviewDB implements IHandleDB{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-	}
-	
-	@Override
-	public List<Index_Node> getAllIndexes(int sqlmap_file_id) 
-	{
-		List<Index_Node> list_indexes = new LinkedList<Index_Node>();
-       	try
-       	{
-       	   String command="select table_name,sql_auto_index from xmltosql where status = 1 and sqlmap_file_id="+sqlmap_file_id;
-       	   Statement stmt = conn.createStatement();
-   	       stmt.execute(command);
-   	       ResultSet rs = stmt.getResultSet();
-   	  
-   	       while(rs.next())
-   	       {
-   	    	   Index_Node index_Node=new Index_Node();
-	    	   //ÕâÌõSQLËùÉæ¼°µÄ±íÃû,¿ÉÄÜÓĞ¶à¸ö±íÃû,ÓÃ,·Ö¸ô
-	    	   index_Node.table_name=rs.getString("table_name");
-	    	   //ÕâÌõSQL´´½¨Ë÷ÒıµÄ½Å±¾,¿ÉÄÜÓĞ¶àÌõ½¨Ë÷ÒıµÄÓï¾ä,ÒÔ;·Ö¸ô
-	    	   index_Node.index_name=rs.getString("sql_auto_index");
-	    	   list_indexes.add(index_Node);
-   	       }
-   	       
-   	       rs.close();
-           stmt.close();
-           return list_indexes;
-       	}
-           catch(SQLException e)
-           {
-        	   logger.error("¼ìË÷ÒÑÉú³ÉµÄindexes³ö´í", e);
-        	   return null;
-           }
+
 	}
 
-	
-	/*
-	 * É¾³ımerge½á¹û
-	 */
 	@Override
-	public void deleteMergeResult(int sqlmap_file_id) {
-		
-		String command="delete from mergeresult where sqlmap_file_id="+sqlmap_file_id;
-		Statement stmt;
+	public List<Index_Node> getAllIndexes(int sqlmap_file_id) {
+		List<Index_Node> list_indexes = new LinkedList<Index_Node>();
 		try {
-			stmt = conn.createStatement();
+			String command = "select table_name,sql_auto_index from xmltosql where status = 1 and sqlmap_file_id=" + sqlmap_file_id;
+			Statement stmt = conn.createStatement();
 			stmt.execute(command);
-			int rows=stmt.getUpdateCount();
+			ResultSet rs = stmt.getResultSet();
+
+			while (rs.next()) {
+				Index_Node index_Node = new Index_Node();
+				// è¿™æ¡SQLæ‰€æ¶‰åŠçš„è¡¨å,å¯èƒ½æœ‰å¤šä¸ªè¡¨å,ç”¨,åˆ†éš”
+				index_Node.table_name = rs.getString("table_name");
+				// è¿™æ¡SQLåˆ›å»ºç´¢å¼•çš„è„šæœ¬,å¯èƒ½æœ‰å¤šæ¡å»ºç´¢å¼•çš„è¯­å¥,ä»¥;åˆ†éš”
+				index_Node.index_name = rs.getString("sql_auto_index");
+				list_indexes.add(index_Node);
+			}
+
+			rs.close();
 			stmt.close();
-			logger.debug("mergeresult sqlmap_file_id "+sqlmap_file_id+rows+" is deleted.");
+			return list_indexes;
 		} catch (SQLException e) {
-			logger.error("some error happen:",e);
+			logger.error("æ£€ç´¢å·²ç”Ÿæˆçš„indexeså‡ºé”™", e);
+			return null;
 		}
 	}
 
 	/*
-	 * ²åÈëmerge½á¹û
+	 * åˆ é™¤mergeç»“æœ
 	 */
 	@Override
-	public void saveMergeResult(int sqlmap_file_id, String tablename,
-			String real_tablename, String exist_indexes, String new_indexes,
+	public void deleteMergeResult(int sqlmap_file_id) {
+
+		String command = "delete from mergeresult where sqlmap_file_id=" + sqlmap_file_id;
+		Statement stmt;
+		try {
+			stmt = conn.createStatement();
+			stmt.execute(command);
+			int rows = stmt.getUpdateCount();
+			stmt.close();
+			logger.debug("mergeresult sqlmap_file_id " + sqlmap_file_id + rows + " is deleted.");
+		} catch (SQLException e) {
+			logger.error("some error happen:", e);
+		}
+	}
+
+	/*
+	 * æ’å…¥mergeç»“æœ
+	 */
+	@Override
+	public void saveMergeResult(int sqlmap_file_id, String tablename, String real_tablename, String exist_indexes, String new_indexes,
 			String merge_result) {
-		String command="insert into mergeresult(sqlmap_file_id,tablename,real_tablename,exist_indexes,new_indexes,merge_result,gmt_create,gmt_modified) values(";
-		command=command+sqlmap_file_id+",'"+tablename+"','"+real_tablename+"','"+exist_indexes+"','"+new_indexes+"','"+merge_result+"',now(),now())";
+		String command = "insert into mergeresult(sqlmap_file_id,tablename,real_tablename,exist_indexes,new_indexes,merge_result,gmt_create,gmt_modified) values(";
+		command = command + sqlmap_file_id + ",'" + tablename + "','" + real_tablename + "','" + exist_indexes + "','" + new_indexes
+				+ "','" + merge_result + "',now(),now())";
 		logger.debug(command);
 		Statement stmt;
 		try {
@@ -365,8 +332,8 @@ public class HandleSQLReviewDB implements IHandleDB{
 			stmt.execute(command);
 			stmt.close();
 		} catch (SQLException e) {
-			logger.error("some error happen:",e);
+			logger.error("some error happen:", e);
 		}
-		
+
 	}
 }
